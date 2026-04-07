@@ -1,0 +1,325 @@
+[
+  {
+    "tieu_de": "Cháy nhà gần chợ Bến Thành",
+    "noi_dung": "Cháy nhà dân tại quận 1, khói bốc cao, nguy hiểm",
+    "id_loai_su_co": 1,
+    "ten_loai": "Cháy nổ",
+    "id_muc_do": 4,
+    "ten_muc_do": "Khẩn cấp",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Rò rỉ khí gas chung cư",
+    "noi_dung": "Phát hiện khí gas rò rỉ trong chung cư, mùi hắc nồng",
+    "id_loai_su_co": 1,
+    "ten_loai": "Cháy nổ",
+    "id_muc_do": 4,
+    "ten_muc_do": "Khẩn cấp",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Kho hàng bốc cháy",
+    "noi_dung": "Ngọn lửa bùng phát trong kho hàng, thiệt hại lớn",
+    "id_loai_su_co": 1,
+    "ten_loai": "Cháy nổ",
+    "id_muc_do": 4,
+    "ten_muc_do": "Khẩn cấp",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Tai nạn xe trên cao tốc",
+    "noi_dung": "Tai nạn giao thông nghiêm trọng trên đường cao tốc, nhiều xe đâm nhau",
+    "id_loai_su_co": 2,
+    "ten_loai": "Tai nạn giao thông",
+    "id_muc_do": 3,
+    "ten_muc_do": "Nguy hiểm",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Tai nạn giao thông ngã tư",
+    "noi_dung": "Xe máy va chạm ô tô tại ngã tư, có người bị thương",
+    "id_loai_su_co": 2,
+    "ten_loai": "Tai nạn giao thông",
+    "id_muc_do": 3,
+    "ten_muc_do": "Nguy hiểm",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Kẹt xe nghiêm trọng",
+    "noi_dung": "Ùn tắc kẹt xe nghiêm trọng tại trung tâm thành phố",
+    "id_loai_su_co": 2,
+    "ten_loai": "Tai nạn giao thông",
+    "id_muc_do": 2,
+    "ten_muc_do": "Trung bình",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Lũ lụt khu dân cư",
+    "noi_dung": "Lũ lụt dâng cao trong khu dân cư, nhà cửa ngập nước",
+    "id_loai_su_co": 3,
+    "ten_loai": "Thiên tai",
+    "id_muc_do": 4,
+    "ten_muc_do": "Khẩn cấp",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Bão số 5 đổ bộ",
+    "noi_dung": "Bão lớn đổ bộ, gió giật mạnh, cây đổ ngã hàng loạt",
+    "id_loai_su_co": 3,
+    "ten_loai": "Thiên tai",
+    "id_muc_do": 4,
+    "ten_muc_do": "Khẩn cấp",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Sạt lở đất miền núi",
+    "noi_dung": "Sạt lở đất tại vùng núi cao, đường bị chặn",
+    "id_loai_su_co": 3,
+    "ten_loai": "Thiên tai",
+    "id_muc_do": 3,
+    "ten_muc_do": "Nguy hiểm",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Ngập đường sau mưa",
+    "noi_dung": "Mưa lớn gây ngập đường phố, ảnh hưởng giao thông",
+    "id_loai_su_co": 3,
+    "ten_loai": "Thiên tai",
+    "id_muc_do": 2,
+    "ten_muc_do": "Trung bình",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Người đột quỵ cần cấp cứu",
+    "noi_dung": "Người dân bị đột quỵ nằm ngã trên đường không có ai giúp",
+    "id_loai_su_co": 4,
+    "ten_loai": "Y tế khẩn cấp",
+    "id_muc_do": 4,
+    "ten_muc_do": "Khẩn cấp",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Đuối nước tại hồ bơi",
+    "noi_dung": "Trẻ em bị đuối nước tại hồ bơi, cần cứu hộ ngay",
+    "id_loai_su_co": 4,
+    "ten_loai": "Y tế khẩn cấp",
+    "id_muc_do": 4,
+    "ten_muc_do": "Khẩn cấp",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Ẩu đả tập thể tại chợ đêm",
+    "noi_dung": "Vụ xô xát đánh nhau tập thể ở khu vực chợ đêm",
+    "id_loai_su_co": 5,
+    "ten_loai": "An ninh trật tự",
+    "id_muc_do": 3,
+    "ten_muc_do": "Nguy hiểm",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Trộm cắp đột nhập",
+    "noi_dung": "Trộm cắp đột nhập nhà dân ban đêm, lấy tài sản",
+    "id_loai_su_co": 5,
+    "ten_loai": "An ninh trật tự",
+    "id_muc_do": 3,
+    "ten_muc_do": "Nguy hiểm",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Người lạ nghi vấn trước trường học",
+    "noi_dung": "Người lạ mặt đứng trước trường học có hành động đáng ngờ",
+    "id_loai_su_co": 5,
+    "ten_loai": "An ninh trật tự",
+    "id_muc_do": 2,
+    "ten_muc_do": "Trung bình",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Tiếng ồn khu dân cư",
+    "noi_dung": "Biểu ngữ treo trước nhà dân, tiếng ồn từ loa phường",
+    "id_loai_su_co": 5,
+    "ten_loai": "An ninh trật tự",
+    "id_muc_do": 1,
+    "ten_muc_do": "Thấp",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Ô nhiễm khói nhà máy",
+    "noi_dung": "Ô nhiễm không khí nghiêm trọng do nhà máy xả thải",
+    "id_loai_su_co": 3,
+    "ten_loai": "Thiên tai",
+    "id_muc_do": 2,
+    "ten_muc_do": "Trung bình",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Cháy xe máy trên đường",
+    "noi_dung": "Cháy xe máy trên đường phố, khói đen bốc lên",
+    "id_loai_su_co": 1,
+    "ten_loai": "Cháy nổ",
+    "id_muc_do": 2,
+    "ten_muc_do": "Trung bình",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Nạn nhân tai nạn cần cấp cứu",
+    "noi_dung": "Người bị nạn sau tai nạn xe cần cấp cứu khẩn cấp, máu nhiều",
+    "id_loai_su_co": 4,
+    "ten_loai": "Y tế khẩn cấp",
+    "id_muc_do": 4,
+    "ten_muc_do": "Khẩn cấp",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Tai nạn tại nhà",
+    "noi_dung": "Ngã cầu thang tại nhà dân, có người bị gãy tay",
+    "id_loai_su_co": 4,
+    "ten_loai": "Y tế khẩn cấp",
+    "id_muc_do": 2,
+    "ten_muc_do": "Trung bình",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Mua ngay khuyến mãi 50%",
+    "noi_dung": "Giảm giá sốc các mặt hàng điện tử, liên hệ hotline 0988888888. Sale off 50% hôm nay!",
+    "id_loai_su_co": 0,
+    "id_muc_do": 0,
+    "is_spam": 1
+  },
+  {
+    "tieu_de": "Quảng cáo shop thời trang",
+    "noi_dung": "Shop mới khai trương giảm giá toàn bộ. Freeship toàn quốc. Zalo 0909111222",
+    "id_loai_su_co": 0,
+    "id_muc_do": 0,
+    "is_spam": 1
+  },
+  {
+    "tieu_de": "test test test",
+    "noi_dung": "đây là bài kiểm tra hệ thống không có nội dung thực",
+    "id_loai_su_co": 0,
+    "id_muc_do": 0,
+    "is_spam": 1
+  },
+  {
+    "tieu_de": "aaaaaaaaa bbbbbb",
+    "noi_dung": "aaaaaaa aaaaaaa aaaaaaa test test test test",
+    "id_loai_su_co": 0,
+    "id_muc_do": 0,
+    "is_spam": 1
+  },
+  {
+    "tieu_de": "abc xyz 123",
+    "noi_dung": "hello hello hello hello hello",
+    "id_loai_su_co": 0,
+    "id_muc_do": 0,
+    "is_spam": 1
+  },
+  {
+    "tieu_de": "Không có gì cả",
+    "noi_dung": "blah blah blah vô nghĩa không liên quan tới sự cố nào",
+    "id_loai_su_co": 0,
+    "id_muc_do": 0,
+    "is_spam": 1
+  },
+  {
+    "tieu_de": "Lừa đảo giả mạo báo cáo",
+    "noi_dung": "Đây là tin giả mạo, không có sự cố thực tế nào xảy ra",
+    "id_loai_su_co": 0,
+    "id_muc_do": 0,
+    "is_spam": 1
+  },
+  {
+    "tieu_de": "Mua bán đất nền giá rẻ",
+    "noi_dung": "Bán đất nền dự án khu đô thị mới, sổ đỏ chính chủ, LH 0901234567",
+    "id_loai_su_co": 0,
+    "id_muc_do": 0,
+    "is_spam": 1
+  },
+  {
+    "tieu_de": "Tuyển dụng nhân viên gấp",
+    "noi_dung": "Công ty cần tuyển gấp 10 nhân viên kinh doanh, lương cao thưởng nhiều. Inbox ngay!",
+    "id_loai_su_co": 0,
+    "id_muc_do": 0,
+    "is_spam": 1
+  },
+  {
+    "tieu_de": "xin chào xin chào xin chào",
+    "noi_dung": "xin chào xin chào xin chào xin chào xin chào xin chào",
+    "id_loai_su_co": 0,
+    "id_muc_do": 0,
+    "is_spam": 1
+  },
+  {
+    "tieu_de": "Scam cảnh báo",
+    "noi_dung": "Đây là nội dung scam, lừa đảo không có thật, tạo ra để kiểm tra hệ thống",
+    "id_loai_su_co": 0,
+    "id_muc_do": 0,
+    "is_spam": 1
+  },
+  {
+    "tieu_de": "Share link facebook coi đi",
+    "noi_dung": "Vào đây xem ngay facebook.com/xyz mua hàng siêu rẻ promo code 2024",
+    "id_loai_su_co": 0,
+    "id_muc_do": 0,
+    "is_spam": 1
+  },
+  {
+    "tieu_de": "Shopee sale lớn",
+    "noi_dung": "Flash sale shopee lazada giờ vàng giảm đến 80% hàng chất lượng",
+    "id_loai_su_co": 0,
+    "id_muc_do": 0,
+    "is_spam": 1
+  },
+  {
+    "tieu_de": "zxcvbnm",
+    "noi_dung": "qwerty asdf 1234567890",
+    "id_loai_su_co": 0,
+    "id_muc_do": 0,
+    "is_spam": 1
+  },
+  {
+    "tieu_de": "Cháy chung cư mini Hà Nội",
+    "noi_dung": "Đám cháy bùng phát tại tầng 3 chung cư mini đường Trung Kính, cư dân đang sơ tán",
+    "id_loai_su_co": 1,
+    "ten_loai": "Cháy nổ",
+    "id_muc_do": 4,
+    "ten_muc_do": "Khẩn cấp",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Người bị thương nặng sau tai nạn",
+    "noi_dung": "Một xe tải và xe máy va chạm mạnh tại km15 quốc lộ 1A, 2 người bị thương nặng",
+    "id_loai_su_co": 2,
+    "ten_loai": "Tai nạn giao thông",
+    "id_muc_do": 4,
+    "ten_muc_do": "Khẩn cấp",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Ngập lụt TP.HCM sau cơn mưa lớn",
+    "noi_dung": "Nhiều tuyến đường trung tâm ngập sâu 50cm sau trận mưa kéo dài 2 tiếng, phương tiện chết máy hàng loạt",
+    "id_loai_su_co": 3,
+    "ten_loai": "Thiên tai",
+    "id_muc_do": 3,
+    "ten_muc_do": "Nguy hiểm",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Bệnh nhân cấp cứu không được nhập viện",
+    "noi_dung": "Người bị tai nạn lao động gãy chân, đang chờ cấp cứu bên ngoài cổng bệnh viện",
+    "id_loai_su_co": 4,
+    "ten_loai": "Y tế khẩn cấp",
+    "id_muc_do": 3,
+    "ten_muc_do": "Nguy hiểm",
+    "is_spam": 0
+  },
+  {
+    "tieu_de": "Nhóm thanh niên gây rối",
+    "noi_dung": "Một nhóm thanh niên khoảng 10 người cầm hung khí đang hỗn chiến tại công viên",
+    "id_loai_su_co": 5,
+    "ten_loai": "An ninh trật tự",
+    "id_muc_do": 4,
+    "ten_muc_do": "Khẩn cấp",
+    "is_spam": 0
+  }
+]
