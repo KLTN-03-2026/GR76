@@ -1,0 +1,291 @@
+{
+  "info": {
+    "name": "SOS System API",
+    "description": "Toàn bộ API cho hệ thống SOS Backend theo chuẩn Laravel Sanctum",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "YOUR_ADMIN_TOKEN_HERE",
+      "type": "string"
+    },
+    {
+      "key": "user_token",
+      "value": "YOUR_USER_TOKEN_HERE",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "User Register",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"ten\": \"Nguyen Van A\",\n    \"email\": \"nguyenvana@example.com\",\n    \"so_dien_thoai\": \"0912345678\",\n    \"mat_khau\": \"password\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/register", "host": [ "{{base_url}}" ], "path": [ "register" ] }
+          }
+        },
+        {
+          "name": "User Login",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"user1@example.com\",\n    \"mat_khau\": \"password\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/login", "host": [ "{{base_url}}" ], "path": [ "login" ] }
+          }
+        },
+        {
+          "name": "Admin Login",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"ten_dang_nhap\": \"admin1\",\n    \"mat_khau\": \"password\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/admin/login", "host": [ "{{base_url}}" ], "path": [ "admin", "login" ] }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{user_token}}", "type": "string" } ] },
+            "method": "POST",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "url": { "raw": "{{base_url}}/logout", "host": [ "{{base_url}}" ], "path": [ "logout" ] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Admin - Quản lý người dùng",
+      "item": [
+        {
+          "name": "Danh sách người dùng",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{admin_token}}", "type": "string" } ] },
+            "method": "GET",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "url": { "raw": "{{base_url}}/admin/users", "host": [ "{{base_url}}" ], "path": [ "admin", "users" ] }
+          }
+        },
+        {
+          "name": "Tạo người dùng",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{admin_token}}", "type": "string" } ] },
+            "method": "POST",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"ten\": \"User Mới\",\n    \"email\": \"newusertest@example.com\",\n    \"so_dien_thoai\": \"0987654321\",\n    \"mat_khau\": \"password\",\n    \"id_vai_tro\": 2\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/admin/users", "host": [ "{{base_url}}" ], "path": [ "admin", "users" ] }
+          }
+        },
+        {
+          "name": "Chi tiết người dùng",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{admin_token}}", "type": "string" } ] },
+            "method": "GET",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "url": { "raw": "{{base_url}}/admin/users/1", "host": [ "{{base_url}}" ], "path": [ "admin", "users", "1" ] }
+          }
+        },
+        {
+          "name": "Cập nhật người dùng",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{admin_token}}", "type": "string" } ] },
+            "method": "PUT",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"ten\": \"Tên Cập Nhật\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/admin/users/1", "host": [ "{{base_url}}" ], "path": [ "admin", "users", "1" ] }
+          }
+        },
+        {
+          "name": "Xóa người dùng",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{admin_token}}", "type": "string" } ] },
+            "method": "DELETE",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "url": { "raw": "{{base_url}}/admin/users/1", "host": [ "{{base_url}}" ], "path": [ "admin", "users", "1" ] }
+          }
+        },
+        {
+          "name": "Tìm kiếm người dùng",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{admin_token}}", "type": "string" } ] },
+            "method": "GET",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "url": { "raw": "{{base_url}}/admin/users/search?q=user1", "host": [ "{{base_url}}" ], "path": [ "admin", "users", "search" ], "query": [ { "key": "q", "value": "user1" } ] }
+          }
+        },
+        {
+          "name": "Đổi mật khẩu người dùng",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{admin_token}}", "type": "string" } ] },
+            "method": "PATCH",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"mat_khau_moi\": \"newpassword\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/admin/users/1/password", "host": [ "{{base_url}}" ], "path": [ "admin", "users", "1", "password" ] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Admin - Quản lý sự cố",
+      "item": [
+        {
+          "name": "Danh sách sự cố",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{admin_token}}", "type": "string" } ] },
+            "method": "GET",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "url": { "raw": "{{base_url}}/admin/su-co", "host": [ "{{base_url}}" ], "path": [ "admin", "su-co" ] }
+          }
+        },
+        {
+          "name": "Cập nhật trạng thái sự cố",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{admin_token}}", "type": "string" } ] },
+            "method": "PATCH",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"trang_thai\": \"Đang xử lý\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/admin/su-co/1/status", "host": [ "{{base_url}}" ], "path": [ "admin", "su-co", "1", "status" ] }
+          }
+        },
+        {
+          "name": "Tìm kiếm sự cố",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{admin_token}}", "type": "string" } ] },
+            "method": "GET",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "url": { "raw": "{{base_url}}/admin/su-co/search?q=cháy", "host": [ "{{base_url}}" ], "path": [ "admin", "su-co", "search" ], "query": [ { "key": "q", "value": "cháy" } ] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. User - Chức năng người dùng",
+      "item": [
+        {
+          "name": "Xem Profile",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{user_token}}", "type": "string" } ] },
+            "method": "GET",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "url": { "raw": "{{base_url}}/me", "host": [ "{{base_url}}" ], "path": [ "me" ] }
+          }
+        },
+        {
+          "name": "Đăng sự cố mới",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{user_token}}", "type": "string" } ] },
+            "method": "POST",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"tieu_de\": \"Cháy lớn ở nhà máy\",\n    \"noi_dung\": \"Thấy khói bốc lên ngùn ngụt ở ngay khu công nghiệp.\",\n    \"dia_chi\": \"Khu công nghiệp A\",\n    \"vi_do\": 10.755,\n    \"kinh_do\": 106.666,\n    \"id_loai_su_co\": 2,\n    \"id_muc_do\": 4\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{base_url}}/su-co", "host": [ "{{base_url}}" ], "path": [ "su-co" ] }
+          }
+        },
+        {
+          "name": "Sự cố của tôi",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{user_token}}", "type": "string" } ] },
+            "method": "GET",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "url": { "raw": "{{base_url}}/my-su-co", "host": [ "{{base_url}}" ], "path": [ "my-su-co" ] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. AI Integration",
+      "item": [
+        {
+          "name": "Phân tích sự cố",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{admin_token}}", "type": "string" } ] },
+            "method": "POST",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "url": { "raw": "{{base_url}}/ai/phan-tich/1", "host": [ "{{base_url}}" ], "path": [ "ai", "phan-tich", "1" ] }
+          }
+        },
+        {
+          "name": "Kiểm tra trùng lặp",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{admin_token}}", "type": "string" } ] },
+            "method": "POST",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "url": { "raw": "{{base_url}}/ai/check-duplicate/1", "host": [ "{{base_url}}" ], "path": [ "ai", "check-duplicate", "1" ] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Master Data (Admin)",
+      "item": [
+        {
+          "name": "Loại sự cố",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{admin_token}}", "type": "string" } ] },
+            "method": "GET",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "url": { "raw": "{{base_url}}/admin/loai-su-co", "host": [ "{{base_url}}" ], "path": [ "admin", "loai-su-co" ] }
+          }
+        },
+        {
+          "name": "Mức độ khẩn cấp",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{admin_token}}", "type": "string" } ] },
+            "method": "GET",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "url": { "raw": "{{base_url}}/admin/muc-do", "host": [ "{{base_url}}" ], "path": [ "admin", "muc-do" ] }
+          }
+        },
+        {
+          "name": "Logs hệ thống",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{admin_token}}", "type": "string" } ] },
+            "method": "GET",
+            "header": [ { "key": "Accept", "value": "application/json" } ],
+            "url": { "raw": "{{base_url}}/admin/logs", "host": [ "{{base_url}}" ], "path": [ "admin", "logs" ] }
+          }
+        }
+      ]
+    }
+  ]
+}
