@@ -78,7 +78,7 @@ class DatabaseSeeder extends Seeder
                 'kinh_do' => $faker->longitude(102.1, 109.4),
                 'id_loai_su_co' => rand(1, count($categories)),
                 'id_muc_do' => rand(1, count($levels)),
-                'trang_thai' => collect(['Mới tiếp nhận', 'Đang xử lý', 'Đã xử lý'])->random(),
+                'trang_thai' => collect(['pending', 'in_progress', 'resolved'])->random(),
             ]);
         }
     }

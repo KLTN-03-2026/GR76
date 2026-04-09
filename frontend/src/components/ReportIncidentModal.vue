@@ -9,8 +9,15 @@
 
       <!-- Content -->
       <div>
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Nội dung chi tiết *</label>
-        <textarea v-model="form.noi_dung" required rows="3" class="input-field resize-none" placeholder="Mô tả chi tiết..." />
+        <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+          Nội dung chi tiết *
+          <span v-if="aiAnalyzing" class="ml-2 inline-flex items-center gap-1 text-xs text-primary-500 font-normal">
+            <span class="w-3 h-3 border-2 border-primary-300 border-t-primary-600 rounded-full animate-spin inline-block"></span>
+            AI đang phân tích ảnh...
+          </span>
+          <span v-if="aiDone && !aiAnalyzing" class="ml-2 text-xs text-green-500 font-normal">✓ AI đã mô tả từ ảnh</span>
+        </label>
+        <textarea v-model="form.noi_dung" required rows="3" class="input-field resize-none" placeholder="Mô tả chi tiết... (tự động điền khi upload ảnh)" />
       </div>
 
       <!-- Address Autocomplete -->
@@ -104,8 +111,24 @@
         </div>
         <div v-else class="relative rounded-xl overflow-hidden">
           <img :src="imagePreview" class="w-full max-h-44 object-cover rounded-xl" />
-          <button type="button" @click="clearImage"
+          <!-- AI Analyzing overlay -->
+          <div v-if="aiAnalyzing"
+               class="absolute inset-0 bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center gap-2 rounded-xl">
+            <span class="w-8 h-8 border-3 border-white/40 border-t-white rounded-full animate-spin"></span>
+            <span class="text-white text-sm font-medium">AI đang đọc ảnh...</span>
+          </div>
+          <button type="button" @click="clearImage" :disabled="aiAnalyzing"
                   class="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 shadow">✕</button>
+        </div>
+      </div>
+      <!-- AI Warnings -->
+      <div v-if="aiWarning" :class="['rounded-xl px-4 py-3 text-sm border', aiWarning.type === 'spam' ? 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300' : 'bg-yellow-50 border-yellow-200 text-yellow-700 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-300']">
+        <div class="flex items-start gap-2">
+          <span class="text-lg">{{ aiWarning.type === 'spam' ? '🚫' : '⚠️' }}</span>
+          <div>
+            <p class="font-semibold">{{ aiWarning.title }}</p>
+            <p class="mt-0.5 text-xs opacity-80">{{ aiWarning.message }}</p>
+          </div>
         </div>
       </div>
 
@@ -146,6 +169,9 @@ const categories     = ref([])
 const levels         = ref([])
 const fileInput      = ref(null)
 const imagePreview   = ref('')
+const aiAnalyzing    = ref(false)
+const aiDone         = ref(false)
+const aiWarning      = ref(null)
 const imageFile      = ref(null)
 const addressWrap    = ref(null)
 
@@ -276,11 +302,85 @@ function onFileChange(e) {
   if (file.size > 10 * 1024 * 1024) { toast.error('Ảnh quá lớn (tối đa 10MB)'); return }
   imageFile.value    = file
   imagePreview.value = URL.createObjectURL(file)
+  aiDone.value       = false
+  // Auto-analyze with AI
+  analyzeImageWithAI(file)
+}
+
+async function analyzeImageWithAI(file) {
+  aiAnalyzing.value = true
+  aiWarning.value = null
+  try {
+    // Convert file to base64
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result.split(',')[1])
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+
+    // Call AI predict-json endpoint
+    const resp = await fetch('http://localhost:8001/predict-json', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tieu_de: form.tieu_de || 'Su co',
+        noi_dung: '',
+        image_base64: base64,
+      })
+    })
+
+    if (resp.ok) {
+      const data = await resp.json()
+      console.log('[AI Response]', data)
+
+      // Auto-fill noi dung from Groq Vision description
+      if (data.image_description) {
+        form.noi_dung = data.image_description
+        aiDone.value = true
+        toast.success('AI da phan tich anh thanh cong!')
+      }
+
+      // Auto-fill loai su co & muc do (always override from AI)
+      if (data.id_loai_su_co && data.id_loai_su_co > 0) {
+        form.id_loai_su_co = data.id_loai_su_co
+      }
+      if (data.id_muc_do && data.id_muc_do > 0) {
+        form.id_muc_do = data.id_muc_do
+      }
+
+      // Spam warning
+      if (data.is_spam === 1) {
+        aiWarning.value = {
+          type: 'spam',
+          title: 'Noi dung bi phat hien la spam',
+          message: `Do tin cay: ${(data.do_tin_cay * 100).toFixed(0)}%. Bao cao nay co the bi tu choi.`
+        }
+        toast.warning('Noi dung co dau hieu spam!')
+      }
+
+      // Duplicate warning
+      if (data.is_duplicate === 1) {
+        aiWarning.value = {
+          type: 'duplicate',
+          title: 'Su co co the bi trung lap',
+          message: `Do tuong dong: ${(data.similarity_score * 100).toFixed(0)}%. Su co tuong tu da duoc bao cao truoc do.`
+        }
+        toast.warning('Co su co tuong tu da duoc bao cao!')
+      }
+    }
+  } catch (err) {
+    console.warn('AI image analysis failed:', err)
+  } finally {
+    aiAnalyzing.value = false
+  }
 }
 
 function clearImage() {
   imageFile.value    = null
   imagePreview.value = ''
+  aiDone.value       = false
+  aiWarning.value    = null
   if (fileInput.value) fileInput.value.value = ''
 }
 

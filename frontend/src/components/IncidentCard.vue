@@ -1,6 +1,14 @@
 <template>
   <div :class="['glass-card p-5 flex flex-col gap-3 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer group', compact ? 'p-4' : '']"
        @click="$emit('click', incident)">
+    <!-- Image thumbnail -->
+    <div v-if="!compact" class="relative rounded-xl overflow-hidden">
+      <img v-if="incident.hinh_anh" :src="incident.hinh_anh" class="w-full h-32 object-cover" />
+      <div v-else class="w-full h-24 bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400 text-xs">
+        📷 Chưa có hình ảnh
+      </div>
+    </div>
+
     <!-- Header row -->
     <div class="flex items-start justify-between gap-2">
       <div class="flex-1 min-w-0">
@@ -23,11 +31,11 @@
     <div class="flex items-center gap-2 flex-wrap">
       <span v-if="incident.loai_su_co || incident.category"
             class="text-xs px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium">
-        {{ incident.loai_su_co?.ten || incident.category?.name || incident.id_loai_su_co }}
+        {{ incident.loai_su_co?.ten_loai || incident.category?.name || incident.id_loai_su_co }}
       </span>
-      <span v-if="incident.muc_do || incident.level"
+      <span v-if="incident.muc_do_khan_cap || incident.muc_do || incident.level"
             :class="['text-xs px-2.5 py-1 rounded-full font-medium', severityClass]">
-        ⚡ {{ incident.muc_do?.ten || incident.level?.name || 'Chưa phân loại' }}
+        ⚡ {{ incident.muc_do_khan_cap?.ten_muc_do || incident.muc_do?.ten || incident.level?.name || 'Chưa phân loại' }}
       </span>
     </div>
 
@@ -51,15 +59,16 @@ const props = defineProps({
 defineEmits(['click'])
 
 const statusMap = {
-  cho_xu_ly:     { label: 'Chờ xử lý',   cls: 'badge-pending' },
-  pending:       { label: 'Chờ xử lý',   cls: 'badge-pending' },
-  dang_xu_ly:    { label: 'Đang xử lý',  cls: 'badge-active' },
-  active:        { label: 'Đang xử lý',  cls: 'badge-active' },
-  in_progress:   { label: 'Đang xử lý',  cls: 'badge-active' },
-  da_giai_quyet: { label: 'Đã giải quyết', cls: 'badge-resolved' },
+  pending:       { label: 'Chờ xử lý',     cls: 'badge-pending' },
+  in_progress:   { label: 'Đang xử lý',    cls: 'badge-active' },
   resolved:      { label: 'Đã giải quyết', cls: 'badge-resolved' },
-  tu_choi:       { label: 'Từ chối',     cls: 'badge-rejected' },
-  rejected:      { label: 'Từ chối',     cls: 'badge-rejected' }
+  rejected:      { label: 'Từ chối',       cls: 'badge-rejected' },
+  // Legacy fallbacks
+  cho_xu_ly:     { label: 'Chờ xử lý',     cls: 'badge-pending' },
+  dang_xu_ly:    { label: 'Đang xử lý',    cls: 'badge-active' },
+  active:        { label: 'Đang xử lý',    cls: 'badge-active' },
+  da_giai_quyet: { label: 'Đã giải quyết', cls: 'badge-resolved' },
+  tu_choi:       { label: 'Từ chối',       cls: 'badge-rejected' },
 }
 
 const status = computed(() => props.incident.trang_thai || props.incident.status || 'pending')
@@ -75,8 +84,8 @@ const sevMap = {
   low:   'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
 }
 const sevKey = computed(() => {
-  const m = props.incident.muc_do || props.incident.level
-  return (m?.ten || m?.name || '').toLowerCase()
+  const m = props.incident.muc_do_khan_cap || props.incident.muc_do || props.incident.level
+  return (m?.ten_muc_do || m?.ten || m?.name || '').toLowerCase()
 })
 const severityClass = computed(() => sevMap[sevKey.value] || 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')
 

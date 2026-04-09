@@ -6,16 +6,9 @@ return [
     |--------------------------------------------------------------------------
     | Default Broadcaster
     |--------------------------------------------------------------------------
-    |
-    | This option controls the default broadcaster that will be used by the
-    | framework when an event needs to be broadcast. Set BROADCAST_CONNECTION
-    | in your .env to switch between drivers.
-    |
-    | Supported: "pusher", "ably", "redis", "log", "null"
-    |
     */
 
-    'default' => env('BROADCAST_CONNECTION', 'log'),
+    'default' => env('BROADCAST_CONNECTION', 'reverb'),
 
     /*
     |--------------------------------------------------------------------------
@@ -24,6 +17,19 @@ return [
     */
 
     'connections' => [
+
+        'reverb' => [
+            'driver' => 'reverb',
+            'key'    => env('REVERB_APP_KEY', 'soskey'),
+            'secret' => env('REVERB_APP_SECRET', 'sossecret'),
+            'app_id' => env('REVERB_APP_ID', 'sosapp'),
+            'options' => [
+                'host'   => env('REVERB_HOST', '127.0.0.1'),
+                'port'   => env('REVERB_PORT', 8080),
+                'scheme' => env('REVERB_SCHEME', 'http'),
+                'useTLS' => env('REVERB_SCHEME', 'http') === 'https',
+            ],
+        ],
 
         'pusher' => [
             'driver' => 'pusher',
@@ -34,9 +40,7 @@ return [
                 'cluster' => env('PUSHER_APP_CLUSTER', 'ap1'),
                 'useTLS'  => true,
             ],
-            'client_options' => [
-                // Guzzle client options: https://docs.guzzlephp.org/en/stable/request-options.html
-            ],
+            'client_options' => [],
         ],
 
         'ably' => [

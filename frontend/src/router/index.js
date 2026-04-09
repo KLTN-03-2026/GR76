@@ -15,7 +15,6 @@ const routes = [
   { path: '/map',            component: () => import('@/pages/MapView.vue'),     meta: { requiresAuth: true } },
   { path: '/my-incidents',   component: () => import('@/pages/MyIncidents.vue'), meta: { requiresAuth: true } },
   { path: '/profile',        component: () => import('@/pages/Profile.vue'),     meta: { requiresAuth: true } },
-  { path: '/notifications',  component: () => import('@/pages/Notifications.vue'), meta: { requiresAuth: true } },
 
   // Admin routes
   { path: '/dashboard',             component: () => import('@/pages/Dashboard.vue'),             meta: { requiresAuth: true, requiresAdmin: true } },

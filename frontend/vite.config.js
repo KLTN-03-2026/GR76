@@ -12,12 +12,12 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost/sos-backend/public',
+        target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false
       },
       '/storage': {
-        target: 'http://localhost/sos-backend/public',
+        target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false
       }

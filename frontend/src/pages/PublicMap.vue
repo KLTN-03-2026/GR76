@@ -55,8 +55,8 @@ import { incidentApi } from '@/services/api'
 const incidents = ref([])
 const loading   = ref(false)
 
-const pending  = computed(() => incidents.value.filter(i => ['cho_xu_ly','pending'].includes(i.trang_thai||i.status)).length)
-const resolved = computed(() => incidents.value.filter(i => ['da_giai_quyet','resolved'].includes(i.trang_thai||i.status)).length)
+const pending  = computed(() => incidents.value.filter(i => i.trang_thai === 'pending').length)
+const resolved = computed(() => incidents.value.filter(i => i.trang_thai === 'resolved').length)
 
 async function load() {
   loading.value = true

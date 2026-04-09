@@ -70,7 +70,7 @@
               <tr v-for="inc in latestIncidents" :key="inc.id" class="hover:bg-primary-50/50 dark:hover:bg-gray-700/30 transition-colors">
                 <td class="px-6 py-3 font-medium text-gray-800 dark:text-gray-100 max-w-[180px] truncate">{{ inc.tieu_de }}</td>
                 <td class="px-6 py-3 text-gray-500 dark:text-gray-400 max-w-[160px] truncate">{{ inc.dia_chi || '-' }}</td>
-                <td class="px-6 py-3"><span :class="statusClass(inc)">{{ statusLabel(inc) }}</span></td>
+                <td class="px-6 py-3"><span :class="statusClass(inc)">{{ statusLbl(inc) }}</span></td>
                 <td class="px-6 py-3 text-gray-400 text-xs">{{ formatDate(inc.created_at) }}</td>
               </tr>
               <tr v-if="!latestIncidents.length">
@@ -85,25 +85,33 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Bar, Doughnut } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement } from 'chart.js'
 import { ArrowPathIcon } from '@heroicons/vue/24/outline'
 import { adminApi } from '@/services/api'
+import echo from '@/services/echo'
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement)
 
 const data    = ref(null)
 const loading = ref(false)
 
+const STATUS_LABELS = {
+  pending: 'Chờ xử lý',
+  in_progress: 'Đang xử lý',
+  resolved: 'Đã giải quyết',
+  rejected: 'Từ chối'
+}
+
 const statCards = computed(() => {
   if (!data.value) return []
   const d = data.value
   return [
     { icon: '📋', label: 'Tổng sự cố',     value: d.tong_su_co   ?? 0, change: 'Tổng',  color: 'bg-blue-100 text-blue-700' },
-    { icon: '🆕', label: 'Mới tiếp nhận',  value: d.moi_tiep_nhan ?? 0, change: 'Mới',   color: 'bg-yellow-100 text-yellow-700' },
-    { icon: '🔧', label: 'Đang xử lý',     value: d.dang_xu_ly   ?? 0, change: 'Active', color: 'bg-orange-100 text-orange-600' },
-    { icon: '✅', label: 'Đã xác thực',    value: d.da_xac_thuc  ?? 0, change: 'Xong',  color: 'bg-green-100 text-green-700' },
+    { icon: '⏳', label: 'Chờ xử lý',      value: d.pending      ?? 0, change: 'Mới',   color: 'bg-yellow-100 text-yellow-700' },
+    { icon: '🔧', label: 'Đang xử lý',     value: d.in_progress  ?? 0, change: 'Active', color: 'bg-orange-100 text-orange-600' },
+    { icon: '✅', label: 'Đã giải quyết',  value: d.resolved     ?? 0, change: 'Xong',  color: 'bg-green-100 text-green-700' },
   ]
 })
 
@@ -113,10 +121,10 @@ const barData = computed(() => {
   if (!data.value) return null
   const d = data.value
   return {
-    labels: ['Mới tiếp nhận', 'Đang xử lý', 'Đã xác thực', 'Từ chối'],
+    labels: ['Chờ xử lý', 'Đang xử lý', 'Đã giải quyết', 'Từ chối'],
     datasets: [{
       label: 'Số lượng',
-      data: [d.moi_tiep_nhan ?? 0, d.dang_xu_ly ?? 0, d.da_xac_thuc ?? 0, d.tu_choi ?? 0],
+      data: [d.pending ?? 0, d.in_progress ?? 0, d.resolved ?? 0, d.rejected ?? 0],
       backgroundColor: ['#fef08a', '#fdba74', '#86efac', '#fca5a5'],
       borderRadius: 8, borderSkipped: false
     }]
@@ -138,13 +146,13 @@ const pieOptions = { responsive: true, maintainAspectRatio: false, plugins: { le
 
 // Status badge for latest incidents table
 const statusColors = {
-  'Mới tiếp nhận': 'badge bg-yellow-100 text-yellow-700',
-  'Đang xử lý':   'badge bg-orange-100 text-orange-600',
-  'Đã xác thực':  'badge bg-green-100 text-green-700',
-  'Từ chối':      'badge bg-red-100 text-red-600',
+  'pending':     'badge bg-yellow-100 text-yellow-700',
+  'in_progress': 'badge bg-orange-100 text-orange-600',
+  'resolved':    'badge bg-green-100 text-green-700',
+  'rejected':    'badge bg-red-100 text-red-600',
 }
 function statusClass(i) { return statusColors[i.trang_thai] || 'badge bg-gray-100 text-gray-600' }
-function statusLabel(i) { return i.trang_thai || '-' }
+function statusLbl(i) { return STATUS_LABELS[i.trang_thai] || i.trang_thai || '-' }
 function formatDate(ts) { return ts ? new Date(ts).toLocaleString('vi-VN', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '' }
 
 async function load() {
@@ -158,5 +166,20 @@ async function load() {
   finally { loading.value = false }
 }
 
-onMounted(load)
+// ── Realtime: auto-reload stats ──────────────────────────────────
+let echoChannel = null
+
+onMounted(() => {
+  load()
+
+  echoChannel = echo.channel('incidents')
+  echoChannel.listen('.NewIncidentCreated', () => {
+    // Auto-reload dashboard stats when new incident arrives
+    load()
+  })
+})
+
+onUnmounted(() => {
+  if (echoChannel) echo.leave('incidents')
+})
 </script>

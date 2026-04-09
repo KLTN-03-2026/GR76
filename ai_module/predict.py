@@ -199,31 +199,108 @@ def predict_multimodal(tieu_de: str, noi_dung: str, pil_image) -> dict:
 
 
 # ─────────────────────────────────────────────
-# DUPLICATE DETECTION
+# DUPLICATE DETECTION (Enhanced with GPS)
 # ─────────────────────────────────────────────
+import math
+
+def _haversine_km(lat1, lon1, lat2, lon2) -> float:
+    """Calculate distance between two GPS points in kilometers."""
+    R = 6371  # Earth radius in km
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = (math.sin(dlat / 2) ** 2 +
+         math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) *
+         math.sin(dlon / 2) ** 2)
+    c = 2 * math.asin(math.sqrt(a))
+    return R * c
+
+
 def check_duplicate(
     tieu_de: str,
     noi_dung: str,
     existing_incidents: list[dict],
     threshold: float = 0.75,
+    lat: float = None,
+    lng: float = None,
 ) -> dict:
+    """
+    Enhanced duplicate detection: TF-IDF text similarity + GPS distance.
+
+    Rules:
+        - Text similarity > threshold alone → potential duplicate
+        - If GPS available: similarity > 0.8 AND distance < 0.5km → definite duplicate
+        - Combined score = weighted (0.7 * text_sim + 0.3 * geo_score)
+    """
     c = _load_text_models()
     if not existing_incidents:
-        return {"la_trung_lap": False, "do_tuong_dong": 0.0, "id_su_co_trung": None}
+        return {"is_duplicate": 0, "duplicate_with_id": None, "similarity_score": 0.0}
 
     new_text  = _preprocess(f"{tieu_de} {noi_dung}")
     all_texts = [_preprocess(f"{i.get('tieu_de','')} {i.get('noi_dung','')}") for i in existing_incidents]
 
     vecs     = c["tfidf"].transform([new_text] + all_texts)
     sims     = cosine_similarity(vecs[0], vecs[1:])[0]
-    best_idx = int(np.argmax(sims))
-    best_sim = float(sims[best_idx])
-    is_dup   = best_sim >= threshold
+
+    # Compute combined scores (text + geo proximity)
+    scores = []
+    for idx, inc in enumerate(existing_incidents):
+        text_sim = float(sims[idx])
+        geo_score = 0.0
+        distance_m = None
+
+        # GPS-based scoring
+        if lat is not None and lng is not None:
+            inc_lat = inc.get("vi_do") or inc.get("lat")
+            inc_lng = inc.get("kinh_do") or inc.get("lng")
+            if inc_lat is not None and inc_lng is not None:
+                try:
+                    dist_km = _haversine_km(lat, lng, float(inc_lat), float(inc_lng))
+                    distance_m = dist_km * 1000
+                    # Geo score: 1.0 if same spot, 0.0 if > 2km
+                    geo_score = max(0.0, 1.0 - (dist_km / 2.0))
+                except (ValueError, TypeError):
+                    pass
+
+        # Combined score
+        if distance_m is not None:
+            combined = 0.7 * text_sim + 0.3 * geo_score
+        else:
+            combined = text_sim
+
+        scores.append({
+            "idx": idx,
+            "text_sim": text_sim,
+            "geo_score": geo_score,
+            "distance_m": distance_m,
+            "combined": combined,
+        })
+
+    # Find best match
+    best = max(scores, key=lambda x: x["combined"])
+    best_inc = existing_incidents[best["idx"]]
+
+    # Determine if duplicate
+    is_dup = False
+    if best["distance_m"] is not None:
+        # GPS available → strict: similarity > 0.8 AND distance < 500m
+        if best["text_sim"] >= 0.8 and best["distance_m"] < 500:
+            is_dup = True
+        elif best["combined"] >= threshold:
+            is_dup = True
+    else:
+        # No GPS → text-only threshold
+        is_dup = best["text_sim"] >= threshold
 
     return {
-        "la_trung_lap":   is_dup,
-        "do_tuong_dong":  round(best_sim, 4),
-        "id_su_co_trung": existing_incidents[best_idx]["id_su_co"] if is_dup else None,
+        "is_duplicate":     1 if is_dup else 0,
+        "duplicate_with_id": best_inc.get("id_su_co") if is_dup else None,
+        "similarity_score": round(best["combined"], 4),
+        "text_similarity":  round(best["text_sim"], 4),
+        "distance_m":       round(best["distance_m"], 1) if best["distance_m"] is not None else None,
+        # Legacy field for backward compatibility
+        "la_trung_lap":     is_dup,
+        "do_tuong_dong":    round(best["combined"], 4),
+        "id_su_co_trung":   best_inc.get("id_su_co") if is_dup else None,
     }
 
 
