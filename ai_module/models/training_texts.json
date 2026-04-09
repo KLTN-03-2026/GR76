@@ -1,0 +1,186 @@
+[
+  {
+    "id": 0,
+    "text": "cháy nhà gần chợ bến thành cháy nhà dân tại quận 1, khói bốc cao, nguy hiểm"
+  },
+  {
+    "id": 1,
+    "text": "rò rỉ khí gas chung cư phát hiện khí gas rò rỉ trong chung cư, mùi hắc nồng"
+  },
+  {
+    "id": 2,
+    "text": "kho hàng bốc cháy ngọn lửa bùng phát trong kho hàng, thiệt hại lớn"
+  },
+  {
+    "id": 3,
+    "text": "cháy xe máy trên đường cháy xe máy trên đường phố, khói đen bốc lên"
+  },
+  {
+    "id": 4,
+    "text": "cháy chung cư mini hà nội đám cháy bùng phát tại tầng 3 chung cư mini, cư dân sơ tán"
+  },
+  {
+    "id": 5,
+    "text": "cháy rừng ở đà lạt lửa cháy rừng lan rộng, nhiều hecta rừng bị thiêu rụi"
+  },
+  {
+    "id": 6,
+    "text": "cháy xưởng gỗ xưởng gỗ bốc cháy dữ dội, lực lượng pccc đang chữa cháy"
+  },
+  {
+    "id": 7,
+    "text": "nổ bình gas nhà dân bình gas phát nổ trong bếp, 2 người bị bỏng nặng"
+  },
+  {
+    "id": 8,
+    "text": "chập điện gây cháy chập điện tại nhà kho gây đám cháy lan sang nhà bên cạnh"
+  },
+  {
+    "id": 9,
+    "text": "cháy cửa hàng quần áo cửa hàng quần áo bốc cháy lúc nửa đêm, thiệt hại nặng nề"
+  },
+  {
+    "id": 10,
+    "text": "đám cháy tại nhà máy nhà máy sản xuất nhựa cháy lớn, cột khói đen bốc cao hàng chục mét"
+  },
+  {
+    "id": 11,
+    "text": "tai nạn xe trên cao tốc tai nạn giao thông nghiêm trọng trên đường cao tốc, nhiều xe đâm nhau"
+  },
+  {
+    "id": 12,
+    "text": "tai nạn giao thông ngã tư xe máy va chạm ô tô tại ngã tư, có người bị thương"
+  },
+  {
+    "id": 13,
+    "text": "kẹt xe nghiêm trọng ùn tắc kẹt xe nghiêm trọng tại trung tâm thành phố"
+  },
+  {
+    "id": 14,
+    "text": "người bị thương nặng sau tai nạn xe tải và xe máy va chạm mạnh tại km15, 2 người bị thương nặng"
+  },
+  {
+    "id": 15,
+    "text": "xe container lật trên cầu xe container chở hàng bị lật trên cầu, đường bị chặn hoàn toàn"
+  },
+  {
+    "id": 16,
+    "text": "xe buýt đâm vào dải phân cách xe buýt chạy quá tốc độ tông vào dải phân cách, hành khách hoảng loạn"
+  },
+  {
+    "id": 17,
+    "text": "va chạm liên hoàn 5 xe ô tô tai nạn liên hoàn 5 xe ô tô trên đường vành đai, tắc nghẽn giao thông"
+  },
+  {
+    "id": 18,
+    "text": "xe máy tông người đi bộ xe máy chạy nhanh tông vào người đi bộ trên vỉa hè, người bị thương"
+  },
+  {
+    "id": 19,
+    "text": "ô tô mất lái lao xuống vệ đường ô tô mất lái lao xuống ruộng ven đường quốc lộ"
+  },
+  {
+    "id": 20,
+    "text": "tai nạn xe đạp điện học sinh đi xe đạp điện va quệt vào xe tải, bị thương nhẹ"
+  },
+  {
+    "id": 21,
+    "text": "cây đổ chắn ngang đường cây lớn bật gốc đổ ngang đường sau giông, giao thông tê liệt"
+  },
+  {
+    "id": 22,
+    "text": "sạt lở đất miền núi sạt lở đất tại vùng núi cao, đường bị chặn"
+  },
+  {
+    "id": 23,
+    "text": "lũ lụt khu dân cư lũ lụt dâng cao trong khu dân cư, nhà cửa ngập nước"
+  },
+  {
+    "id": 24,
+    "text": "bão số 5 đổ bộ bão lớn đổ bộ, gió giật mạnh, cây đổ ngã hàng loạt"
+  },
+  {
+    "id": 25,
+    "text": "ngập đường sau mưa mưa lớn gây ngập đường phố, ảnh hưởng giao thông"
+  },
+  {
+    "id": 26,
+    "text": "ngập lụt tp.hcm sau cơn mưa lớn nhiều tuyến đường trung tâm ngập sâu 50cm sau trận mưa kéo dài"
+  },
+  {
+    "id": 27,
+    "text": "triều cường dâng cao nước triều cường dâng cao tràn vào nhà dân ven sông"
+  },
+  {
+    "id": 28,
+    "text": "lũ quét cuốn trôi nhà dân lũ quét bất ngờ cuốn trôi 3 căn nhà ven suối, thiệt hại lớn"
+  },
+  {
+    "id": 29,
+    "text": "cây to gãy nhánh trúng ô tô mưa giông lớn làm cành cây to gãy rơi trúng ô tô"
+  },
+  {
+    "id": 30,
+    "text": "động đất nhẹ ở miền trung rung chấn nhẹ tại khu vực miền trung, người dân hoang mang"
+  },
+  {
+    "id": 31,
+    "text": "người đột quỵ cần cấp cứu người dân bị đột quỵ nằm ngã trên đường không ai giúp"
+  },
+  {
+    "id": 32,
+    "text": "đuối nước tại hồ bơi trẻ em bị đuối nước tại hồ bơi, cần cứu hộ ngay"
+  },
+  {
+    "id": 33,
+    "text": "nạn nhân tai nạn cần cấp cứu người bị nạn cần cấp cứu khẩn cấp, máu nhiều"
+  },
+  {
+    "id": 34,
+    "text": "tai nạn tại nhà ngã cầu thang tại nhà dân, có người bị gãy tay"
+  },
+  {
+    "id": 35,
+    "text": "ngộ độc thực phẩm tập thể 30 công nhân ngộ độc thực phẩm sau bữa ăn trưa, nhập viện cấp cứu"
+  },
+  {
+    "id": 36,
+    "text": "bị rắn cắn cần giải độc nông dân bị rắn hổ mang cắn khi làm ruộng, sưng tấy lan nhanh"
+  },
+  {
+    "id": 37,
+    "text": "ẩu đả tập thể tại chợ đêm vụ xô xát đánh nhau tập thể ở khu vực chợ đêm"
+  },
+  {
+    "id": 38,
+    "text": "trộm cắp đột nhập trộm cắp đột nhập nhà dân ban đêm, lấy tài sản"
+  },
+  {
+    "id": 39,
+    "text": "người lạ nghi vấn trước trường học người lạ mặt đứng trước trường học có hành động đáng ngờ"
+  },
+  {
+    "id": 40,
+    "text": "tiếng ồn khu dân cư tiếng ồn lớn từ loa phường nửa đêm gây phiền hà"
+  },
+  {
+    "id": 41,
+    "text": "nhóm thanh niên gây rối một nhóm thanh niên khoảng 10 người cầm hung khí đang hỗn chiến"
+  },
+  {
+    "id": 42,
+    "text": "cướp giật dây chuyền tên cướp đi xe máy giật dây chuyền phụ nữ đi bộ trên đường"
+  },
+  {
+    "id": 43,
+    "text": "phá hoại tài sản công nhóm thanh niên đập phá biển báo giao thông và ghế đá công viên"
+  },
+  {
+    "id": 44,
+    "text": "nghi vấn buôn bán chất cấm phát hiện hoạt động đáng ngờ tại con hẻm, nghi buôn bán ma túy"
+  },
+  {
+    "id": 45,
+    "text": "trẻ em mất tích tại khu vui chơi bé gái 5 tuổi mất tích tại khu vui chơi, gia đình hoảng loạn tìm kiếm"
+  }
+]

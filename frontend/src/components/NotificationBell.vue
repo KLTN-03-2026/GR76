@@ -28,7 +28,7 @@
 
           <template v-else-if="store.notifications.length">
             <div v-for="n in store.notifications" :key="n.id_thong_bao"
-                 @click="handleRead(n)"
+                 @click="handleClick(n)"
                  :class="['px-4 py-3 border-b border-gray-50 dark:border-gray-700/50 cursor-pointer transition-colors',
                           !n.da_doc ? 'bg-primary-50/70 dark:bg-primary-900/10' : 'hover:bg-gray-50 dark:hover:bg-gray-700/40']">
               <div class="flex gap-3 items-start">
@@ -36,7 +36,10 @@
                 <div class="flex-1 min-w-0">
                   <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{{ n.tieu_de || 'Thông báo' }}</p>
                   <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{{ n.noi_dung }}</p>
-                  <p class="text-xs text-gray-400 mt-1">{{ formatTime(n.created_at) }}</p>
+                  <div class="flex items-center gap-2 mt-1">
+                    <p class="text-xs text-gray-400">{{ formatTime(n.created_at) }}</p>
+                    <span v-if="n.su_co || n.id_su_co" class="text-xs text-primary-500">📍 Xem vị trí</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -54,9 +57,11 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { BellIcon, BellSlashIcon } from '@heroicons/vue/24/outline'
 import { useNotificationStore } from '@/stores/notifications'
 
+const router = useRouter()
 const store = useNotificationStore()
 const open  = ref(false)
 const bellContainer = ref(null)
@@ -66,8 +71,16 @@ function toggle() {
   if (open.value) store.fetchNotifications()
 }
 
-async function handleRead(n) {
+async function handleClick(n) {
+  // Mark as read
   if (!n.da_doc) await store.markRead(n.id_thong_bao)
+
+  // Navigate to map with incident location
+  const incidentId = n.id_su_co || n.su_co?.id_su_co
+  if (incidentId) {
+    open.value = false
+    router.push({ path: '/map', query: { incident: incidentId } })
+  }
 }
 
 function formatTime(ts) {

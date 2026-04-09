@@ -81,7 +81,7 @@ class UserController extends Controller
             ->where('id_nguoi_dung', $request->user()->id_nguoi_dung)
             ->firstOrFail();
 
-        if ($suCo->trang_thai !== 'Mới tiếp nhận') {
+        if ($suCo->trang_thai !== 'pending') {
             return response()->json(['message' => 'Không thể chỉnh sửa sự cố đang được xử lý'], 403);
         }
 
@@ -105,11 +105,11 @@ class UserController extends Controller
     {
         $suCo = SuCo::findOrFail($id);
 
-        if ($suCo->trang_thai !== 'Mới tiếp nhận') {
+        if ($suCo->trang_thai !== 'pending') {
             return response()->json(['message' => 'Sự cố này đang được xử lý hoặc đã hoàn thành'], 422);
         }
 
-        $suCo->update(['trang_thai' => 'Đang xử lý']);
+        $suCo->update(['trang_thai' => 'in_progress']);
 
         return response()->json(['message' => 'Đã tiếp nhận sự cố thành công', 'data' => $suCo]);
     }

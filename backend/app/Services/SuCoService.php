@@ -11,8 +11,11 @@ class SuCoService
     public function createIncident(array $data, int $userId): SuCo
     {
         $data['id_nguoi_dung'] = $userId;
-        $data['trang_thai'] = 'Mới tiếp nhận';
+        $data['trang_thai'] = 'pending';
         $suCo = SuCo::create($data);
+
+        // Load relations so broadcast data is complete
+        $suCo->load(['loaiSuCo', 'mucDoKhanCap', 'nguoiDung']);
 
         event(new NewIncidentCreated($suCo));
 
@@ -23,7 +26,7 @@ class SuCoService
     {
         return SuCo::whereNotNull('vi_do')
             ->whereNotNull('kinh_do')
-            ->whereNotIn('trang_thai', ['Đã xác thực', 'Từ chối'])
+            ->whereNotIn('trang_thai', ['resolved', 'rejected'])
             ->with(['mucDoKhanCap', 'loaiSuCo'])
             ->orderBy('thoi_gian_dang', 'desc')
             ->get();

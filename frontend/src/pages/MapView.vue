@@ -35,7 +35,7 @@
             <p class="text-sm font-semibold text-white truncate">{{ inc.tieu_de }}</p>
             <p class="text-xs text-gray-400 mt-0.5 truncate">📍 {{ inc.dia_chi || 'Không có địa chỉ' }}</p>
             <div class="flex items-center gap-2 mt-1">
-              <span :class="['text-xs px-2 py-0.5 rounded-full font-medium', statusBadge(inc)]">{{ inc.trang_thai }}</span>
+              <span :class="['text-xs px-2 py-0.5 rounded-full font-medium', statusBadge(inc)]">{{ statusLabel(inc) }}</span>
               <span class="text-xs text-gray-500">{{ timeAgo(inc.thoi_gian_dang) }}</span>
             </div>
           </div>
@@ -97,9 +97,15 @@
         <div v-if="selected"
              class="absolute right-4 top-16 w-80 z-[1000] bg-gray-900/95 backdrop-blur-lg text-white rounded-2xl shadow-2xl border border-gray-700 overflow-hidden">
           <!-- Image -->
-          <div v-if="selected.hinh_anh" class="relative">
+          <div v-if="selected.hinh_anh" class="relative cursor-pointer" @click="openImageViewer(selected.hinh_anh, selected.tieu_de)">
             <img :src="selected.hinh_anh" class="w-full h-36 object-cover" />
             <div class="absolute inset-0 bg-gradient-to-t from-gray-900/80 to-transparent" />
+            <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/30">
+              <span class="text-white text-sm bg-black/50 px-3 py-1.5 rounded-full">🔍 Xem ảnh lớn</span>
+            </div>
+          </div>
+          <div v-else class="h-24 bg-gray-800 flex items-center justify-center text-gray-500 text-sm">
+            📷 Chưa có hình ảnh
           </div>
           <!-- Content -->
           <div class="p-4">
@@ -111,22 +117,22 @@
             <p class="text-sm text-gray-300 mb-3 line-clamp-3">{{ selected.noi_dung }}</p>
             <div class="flex gap-2 flex-wrap mb-3">
               <span :class="['text-xs px-2 py-1 rounded-full font-medium', statusBadge(selected)]">
-                {{ selected.trang_thai }}
+                {{ statusLabel(selected) }}
               </span>
               <span v-if="selected.muc_do_khan_cap" class="text-xs px-2 py-1 rounded-full bg-orange-900/40 text-orange-300">
                 ⚡ {{ selected.muc_do_khan_cap.ten_muc_do }}
               </span>
             </div>
             <p class="text-xs text-gray-500 mb-3">{{ formatDate(selected.thoi_gian_dang) }}</p>
-            <!-- Tiếp nhận button — only when status is Mới tiếp nhận -->
-            <button v-if="selected.trang_thai === 'Mới tiếp nhận'"
+            <!-- Tiếp nhận button — only when status is pending -->
+            <button v-if="selected.trang_thai === 'pending'"
                     @click="acceptIncident(selected)"
                     :disabled="accepting"
                     class="w-full bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors text-sm">
               <span v-if="accepting" class="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
               {{ accepting ? 'Đang tiếp nhận...' : '🆘 Tiếp nhận sự cố' }}
             </button>
-            <p v-else-if="selected.trang_thai === 'Đang xử lý'"
+            <p v-else-if="selected.trang_thai === 'in_progress'"
                class="text-center text-xs text-blue-400 py-1">🔧 Đang được xử lý</p>
           </div>
         </div>
@@ -140,19 +146,26 @@
     :prefill-lng="clickedLng"
     @created="afterCreated"
   />
+
+  <!-- Image Viewer Modal -->
+  <ImageViewerModal v-model="showImageViewer" :src="viewerImageSrc" :alt="viewerImageAlt" />
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import MapComponent from '@/components/MapComponent.vue'
 import ReportIncidentModal from '@/components/ReportIncidentModal.vue'
+import ImageViewerModal from '@/components/ImageViewerModal.vue'
 import {
   MagnifyingGlassIcon, PlusCircleIcon, ArrowPathIcon,
   MapPinIcon, AdjustmentsHorizontalIcon
 } from '@heroicons/vue/24/outline'
 import { incidentApi } from '@/services/api'
+import echo from '@/services/echo'
 
+const route      = useRoute()
 const toast      = useToast()
 const incidents  = ref([])
 const loading    = ref(false)
@@ -165,16 +178,35 @@ const activeFilter = ref('all')
 const mapRef      = ref(null)
 const accepting   = ref(false)
 
+// Image viewer state
+const showImageViewer = ref(false)
+const viewerImageSrc  = ref('')
+const viewerImageAlt  = ref('')
+
+function openImageViewer(src, alt = '') {
+  viewerImageSrc.value = src
+  viewerImageAlt.value = alt
+  showImageViewer.value = true
+}
+
+// ── Status label mapping ─────────────────────────────────────────
+const STATUS_LABELS = {
+  pending: 'Chờ xử lý',
+  in_progress: 'Đang xử lý',
+  resolved: 'Đã giải quyết',
+  rejected: 'Từ chối'
+}
+function statusLabel(inc) { return STATUS_LABELS[inc.trang_thai] || inc.trang_thai }
+
 // ── Filter tabs ──────────────────────────────────────────────────
-// CONST: resolved statuses are hidden from map
-const ACTIVE_STATUSES = ['Mới tiếp nhận', 'Đang xử lý']
+const ACTIVE_STATUSES = ['pending', 'in_progress']
 
 const filterTabs = computed(() => {
   const list = incidents.value.filter(i => ACTIVE_STATUSES.includes(i.trang_thai))
   return [
     { value: 'all',           label: 'Tất cả',     icon: '📌', activeClass: 'bg-gray-700',  count: list.length },
-    { value: 'Mới tiếp nhận',label: 'Cần cứu',    icon: '🆘', activeClass: 'bg-red-600',   count: list.filter(i => i.trang_thai === 'Mới tiếp nhận').length },
-    { value: 'Đang xử lý',  label: 'Đội cứu hộ', icon: '🚒', activeClass: 'bg-blue-600',  count: list.filter(i => i.trang_thai === 'Đang xử lý').length },
+    { value: 'pending',       label: 'Chờ xử lý',  icon: '🆘', activeClass: 'bg-red-600',   count: list.filter(i => i.trang_thai === 'pending').length },
+    { value: 'in_progress',   label: 'Đang xử lý', icon: '🚒', activeClass: 'bg-blue-600',  count: list.filter(i => i.trang_thai === 'in_progress').length },
   ]
 })
 
@@ -207,10 +239,10 @@ function urgencyDot(inc) {
 
 // ── Status badge ──────────────────────────────────────────────────
 const statusStyles = {
-  'Mới tiếp nhận': 'bg-yellow-700/50 text-yellow-300',
-  'Đang xử lý':   'bg-blue-700/50 text-blue-300',
-  'Đã xác thực':  'bg-green-700/50 text-green-300',
-  'Từ chối':      'bg-red-700/50 text-red-300',
+  'pending':     'bg-yellow-700/50 text-yellow-300',
+  'in_progress': 'bg-blue-700/50 text-blue-300',
+  'resolved':    'bg-green-700/50 text-green-300',
+  'rejected':    'bg-red-700/50 text-red-300',
 }
 function statusBadge(inc) { return statusStyles[inc.trang_thai] || 'bg-gray-700/50 text-gray-300' }
 
@@ -247,19 +279,17 @@ function onMapClick({ lat, lng }) {
 }
 
 // Called when clicking a Leaflet marker — only set selected, do NOT fly
-// (flyTo causes Leaflet to close the popup during pan animation)
 function onMarkerClick(inc) {
   selected.value = inc
 }
 
-// Accept incident — change status to Đang xử lý
+// Accept incident — change status to in_progress
 async function acceptIncident(inc) {
   accepting.value = true
   try {
     await incidentApi.tiepNhan(inc.id_su_co)
     toast.success('🆘 Đã tiếp nhận sự cố!')
-    // Update in-place so button disappears immediately
-    selected.value = { ...inc, trang_thai: 'Đang xử lý' }
+    selected.value = { ...inc, trang_thai: 'in_progress' }
     await loadIncidents()
   } catch (err) {
     toast.error(err.response?.data?.message || 'Không thể tiếp nhận sự cố')
@@ -279,9 +309,7 @@ function selectFromSidebar(inc) {
 }
 
 async function afterCreated() {
-  // Reload from API to get fresh data with server-assigned fields
   await loadIncidents()
-  // Find the most recently created active incident (sort by id desc)
   const newest = [...incidents.value]
     .filter(i => ACTIVE_STATUSES.includes(i.trang_thai))
     .sort((a, b) => (b.id_su_co ?? 0) - (a.id_su_co ?? 0))[0]
@@ -296,13 +324,56 @@ function goToMyLocation() {
   navigator.geolocation.getCurrentPosition(
     pos => {
       const { latitude: lat, longitude: lng } = pos.coords
-      mapRef.value?.setCenter(lat, lng, 16) // shows blue dot + pans
+      mapRef.value?.setCenter(lat, lng, 16)
     },
     () => toast.error('Không lấy được vị trí, vui lòng cho phép truy cập GPS')
   )
 }
 
-onMounted(loadIncidents)
+// ── Handle query param ?incident=<id> from notification click ─────
+async function handleIncidentQueryParam() {
+  const incidentId = route.query.incident
+  if (!incidentId) return
+  try {
+    const res = await incidentApi.show(incidentId)
+    const inc = res.data.data ?? res.data
+    if (inc) {
+      selected.value = inc
+      const lat = parseFloat(inc.vi_do)
+      const lng = parseFloat(inc.kinh_do)
+      if (!isNaN(lat) && !isNaN(lng)) {
+        setTimeout(() => mapRef.value?.flyToIncident(lat, lng), 500)
+      }
+    }
+  } catch {}
+}
+
+// ── Realtime: listen for new incidents via Reverb ─────────────────
+let echoChannel = null
+
+onMounted(() => {
+  loadIncidents().then(handleIncidentQueryParam)
+
+  // Subscribe to realtime channel
+  echoChannel = echo.channel('incidents')
+  echoChannel.listen('.NewIncidentCreated', (data) => {
+    const newInc = data.incident
+    if (newInc) {
+      // Add to list if not already present
+      const exists = incidents.value.some(i => i.id_su_co === newInc.id_su_co)
+      if (!exists) {
+        incidents.value.unshift(newInc)
+        toast.info(`🆕 Sự cố mới: ${newInc.tieu_de || 'Không rõ'}`, { timeout: 5000 })
+      }
+    }
+  })
+})
+
+onUnmounted(() => {
+  if (echoChannel) {
+    echo.leave('incidents')
+  }
+})
 </script>
 
 <style scoped>

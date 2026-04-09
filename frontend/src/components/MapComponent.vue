@@ -20,7 +20,6 @@ let   mapInst = null
 let   markers = []
 
 // ── Urgency → visual config ───────────────────────────────────────
-// Laravel JSON serializes relations as snake_case: muc_do_khan_cap (not mucDoKhanCap)
 function getUrgencyLevel(incident) {
   const priority = incident.muc_do_khan_cap?.do_uu_tien
                 ?? incident.muc_do?.do_uu_tien
@@ -33,7 +32,6 @@ function getUrgencyLevel(incident) {
     return 'low'
   }
 
-  // Fallback name-based
   const name = (
     incident.muc_do_khan_cap?.ten_muc_do
     ?? incident.muc_do?.ten_muc_do
@@ -49,48 +47,32 @@ function getUrgencyLevel(incident) {
 
 const URGENCY = {
   critical: {
-    color: '#dc2626',       // red-600
-    ring:  '#fca5a5',       // red-300
-    size:  20,
-    ringSize: 36,
-    speed: '1.2s',
-    border: '#991b1b',
-    label: 'Khẩn cấp'
+    color: '#dc2626', ring: '#fca5a5', border: '#991b1b',
+    size: 20, ringSize: 36, speed: '1.2s', label: 'Khẩn cấp',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`
   },
   high: {
-    color: '#ea580c',       // orange-600
-    ring:  '#fdba74',       // orange-300
-    size:  17,
-    ringSize: 30,
-    speed: '1.8s',
-    border: '#c2410c',
-    label: 'Cao'
+    color: '#ea580c', ring: '#fdba74', border: '#c2410c',
+    size: 18, ringSize: 32, speed: '1.8s', label: 'Cao',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14 0-5.5 3-7.5.5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.5-2.26 1.5-3.5z"/></svg>`
   },
   medium: {
-    color: '#d97706',       // amber-600
-    ring:  '#fde68a',       // amber-200
-    size:  14,
-    ringSize: 24,
-    speed: '2.5s',
-    border: '#b45309',
-    label: 'Trung bình'
+    color: '#d97706', ring: '#fde68a', border: '#b45309',
+    size: 16, ringSize: 28, speed: '2.5s', label: 'Trung bình',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`
   },
   low: {
-    color: '#16a34a',       // green-600
-    ring:  '#86efac',       // green-300
-    size:  12,
-    ringSize: 20,
-    speed: '3.5s',
-    border: '#15803d',
-    label: 'Thấp'
+    color: '#16a34a', ring: '#86efac', border: '#15803d',
+    size: 14, ringSize: 24, speed: '3.5s', label: 'Thấp',
+    svg: `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`
   }
 }
 
 function createIcon(level) {
   const cfg = URGENCY[level] ?? URGENCY.medium
-  const half    = cfg.size / 2
-  const halfRing = cfg.ringSize / 2
-  const totalSize = cfg.ringSize + 4
+  const totalSize = cfg.ringSize + 8
+  const iconPad = 4
+  const iconSz = cfg.size - iconPad
 
   const html = `
     <div style="position:relative;width:${totalSize}px;height:${totalSize}px;display:flex;align-items:center;justify-content:center;">
@@ -103,7 +85,6 @@ function createIcon(level) {
         animation:sosPulse ${cfg.speed} ease-out infinite;
         opacity:0.7;
       "></div>
-      <!-- Middle ring (second wave for critical/high) -->
       ${level === 'critical' || level === 'high' ? `
       <div style="
         position:absolute;
@@ -113,15 +94,18 @@ function createIcon(level) {
         animation:sosPulse ${cfg.speed} ease-out ${parseFloat(cfg.speed) * 0.4}s infinite;
         opacity:0.5;
       "></div>` : ''}
-      <!-- Core dot -->
+      <!-- Core marker with SVG icon -->
       <div style="
         position:relative;z-index:2;
         width:${cfg.size}px; height:${cfg.size}px;
-        border-radius:50%;
+        border-radius:${level === 'critical' ? '4px' : '50%'};
         background:${cfg.color};
         border:2.5px solid ${cfg.border};
         box-shadow:0 2px 8px ${cfg.color}88, 0 0 0 1px white;
-      "></div>
+        display:flex;align-items:center;justify-content:center;
+      ">
+        <div style="width:${iconSz}px;height:${iconSz}px;">${cfg.svg}</div>
+      </div>
     </div>
   `
 
@@ -132,6 +116,14 @@ function createIcon(level) {
     iconAnchor: [totalSize / 2, totalSize / 2],
     popupAnchor:[0, -(totalSize / 2 + 4)]
   })
+}
+
+// ── Status display mapping ──────────────────────────────────────
+const STATUS_LABELS = {
+  pending: 'Chờ xử lý',
+  in_progress: 'Đang xử lý',
+  resolved: 'Đã giải quyết',
+  rejected: 'Từ chối'
 }
 
 function clearMarkers() {
@@ -149,13 +141,13 @@ function plotIncidents() {
     const level  = getUrgencyLevel(inc)
     const cfg    = URGENCY[level]
     const title  = inc.tieu_de || 'Sự cố'
-    const status = inc.trang_thai || ''
+    const status = STATUS_LABELS[inc.trang_thai] || inc.trang_thai || ''
     const addr   = inc.dia_chi || ''
     const mucDo  = inc.muc_do_khan_cap?.ten_muc_do ?? inc.muc_do?.ten_muc_do ?? cfg.label
 
     const imgHtml = inc.hinh_anh
       ? `<img src="${inc.hinh_anh}" style="width:100%;height:100px;object-fit:cover;border-radius:8px;margin-bottom:8px;" />`
-      : ''
+      : `<div style="width:100%;height:80px;border-radius:8px;margin-bottom:8px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:12px;">📷 Chưa có hình ảnh</div>`
 
     const marker = L.marker([lat, lng], { icon: createIcon(level) })
       .bindPopup(`
@@ -202,9 +194,11 @@ onMounted(() => {
     zoomControl: true
   })
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors',
-    maxZoom: 19
+  // CartoDB Voyager — no nine-dash line
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 20
   }).addTo(mapInst)
 
   if (props.clickable) {

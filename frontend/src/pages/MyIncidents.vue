@@ -9,9 +9,10 @@
       <div class="flex gap-3">
         <select v-model="filterStatus" class="select-field w-auto text-sm py-2 px-3">
           <option value="">Tất cả trạng thái</option>
-          <option value="cho_xu_ly">Chờ xử lý</option>
-          <option value="dang_xu_ly">Đang xử lý</option>
-          <option value="da_giai_quyet">Đã giải quyết</option>
+          <option value="pending">Chờ xử lý</option>
+          <option value="in_progress">Đang xử lý</option>
+          <option value="resolved">Đã giải quyết</option>
+          <option value="rejected">Từ chối</option>
         </select>
         <button @click="showReport = true" class="btn-emergency text-sm flex items-center gap-2">
           <PlusIcon class="w-4 h-4" /> Báo cáo mới
@@ -43,10 +44,17 @@
   <!-- Detail modal -->
   <Modal v-model="showDetail" :title="selected?.tieu_de || ''" size="md">
     <div v-if="selected" class="space-y-4">
+      <!-- Image -->
+      <div v-if="selected.hinh_anh" class="cursor-pointer" @click="openImageViewer(selected.hinh_anh, selected.tieu_de)">
+        <img :src="selected.hinh_anh" class="w-full h-48 object-cover rounded-xl hover:opacity-80 transition-opacity" />
+      </div>
+      <div v-else class="w-full h-32 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-400 text-sm">
+        📷 Chưa có hình ảnh
+      </div>
       <div class="flex gap-2 flex-wrap">
-        <span :class="['badge', statusClass(selected)]">{{ statusLabel(selected) }}</span>
-        <span v-if="selected.muc_do" class="badge bg-orange-100 text-orange-700">⚡ {{ selected.muc_do?.ten }}</span>
-        <span v-if="selected.loai_su_co" class="badge bg-blue-100 text-blue-700">{{ selected.loai_su_co?.ten }}</span>
+        <span :class="['badge', statusClass(selected)]">{{ statusLabelFn(selected) }}</span>
+        <span v-if="selected.muc_do_khan_cap" class="badge bg-orange-100 text-orange-700">⚡ {{ selected.muc_do_khan_cap?.ten_muc_do }}</span>
+        <span v-if="selected.loai_su_co" class="badge bg-blue-100 text-blue-700">{{ selected.loai_su_co?.ten_loai }}</span>
       </div>
       <div>
         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Nội dung</p>
@@ -61,6 +69,7 @@
   </Modal>
 
   <ReportIncidentModal v-model="showReport" @created="load" />
+  <ImageViewerModal v-model="showImageViewer" :src="viewerImageSrc" :alt="viewerImageAlt" />
 </template>
 
 <script setup>
@@ -69,6 +78,7 @@ import IncidentCard from '@/components/IncidentCard.vue'
 import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 import Modal from '@/components/ui/Modal.vue'
 import ReportIncidentModal from '@/components/ReportIncidentModal.vue'
+import ImageViewerModal from '@/components/ImageViewerModal.vue'
 import { PlusIcon } from '@heroicons/vue/24/outline'
 import { incidentApi } from '@/services/api'
 
@@ -79,15 +89,32 @@ const showDetail   = ref(false)
 const showReport   = ref(false)
 const filterStatus = ref('')
 
+// Image viewer
+const showImageViewer = ref(false)
+const viewerImageSrc  = ref('')
+const viewerImageAlt  = ref('')
+
+function openImageViewer(src, alt = '') {
+  viewerImageSrc.value = src
+  viewerImageAlt.value = alt
+  showImageViewer.value = true
+}
+
+const STATUS_LABELS = {
+  pending: 'Chờ xử lý',
+  in_progress: 'Đang xử lý',
+  resolved: 'Đã giải quyết',
+  rejected: 'Từ chối'
+}
+
 const filtered = computed(() => {
   if (!filterStatus.value) return incidents.value
-  return incidents.value.filter(i => (i.trang_thai || i.status) === filterStatus.value)
+  return incidents.value.filter(i => i.trang_thai === filterStatus.value)
 })
 
-const smCls = { cho_xu_ly:'badge-pending', dang_xu_ly:'badge-active', da_giai_quyet:'badge-resolved', pending:'badge-pending' }
-const smLbl = { cho_xu_ly:'Chờ xử lý', dang_xu_ly:'Đang xử lý', da_giai_quyet:'Đã giải quyết', pending:'Chờ xử lý' }
-function statusClass(i) { return smCls[i.trang_thai || i.status] || 'badge-pending' }
-function statusLabel(i) { return smLbl[i.trang_thai || i.status] || i.trang_thai }
+const smCls = { pending:'badge-pending', in_progress:'badge-active', resolved:'badge-resolved', rejected:'badge-rejected' }
+function statusClass(i) { return smCls[i.trang_thai] || 'badge-pending' }
+function statusLabelFn(i) { return STATUS_LABELS[i.trang_thai] || i.trang_thai }
 function formatDate(ts) { return ts ? new Date(ts).toLocaleString('vi-VN') : '' }
 
 async function load() {

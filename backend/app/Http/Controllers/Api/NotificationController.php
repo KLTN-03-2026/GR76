@@ -10,7 +10,7 @@ class NotificationController extends Controller
 {
     public function index(Request $request)
     {
-        $notifications = ThongBao::with('admin')
+        $notifications = ThongBao::with(['admin', 'suCo'])
             ->where('id_nguoi_dung', $request->user()->id_nguoi_dung)
             ->orderBy('created_at', 'desc')
             ->get();

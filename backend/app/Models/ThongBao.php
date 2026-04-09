@@ -15,6 +15,7 @@ class ThongBao extends Model
     protected $fillable = [
         'id_admin',
         'id_nguoi_dung',
+        'id_su_co',
         'tieu_de',
         'noi_dung',
         'da_doc',
@@ -28,5 +29,10 @@ class ThongBao extends Model
     public function nguoiDung()
     {
         return $this->belongsTo(NguoiDung::class, 'id_nguoi_dung', 'id_nguoi_dung');
+    }
+
+    public function suCo()
+    {
+        return $this->belongsTo(SuCo::class, 'id_su_co', 'id_su_co');
     }
 }

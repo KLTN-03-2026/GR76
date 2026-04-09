@@ -20,7 +20,8 @@ class NewIncidentCreated implements ShouldBroadcast
      */
     public function __construct(SuCo $suCo)
     {
-        // Convert to array so serialization is simple and JSON-safe
+        // Load relations for richer broadcast data
+        $suCo->loadMissing(['loaiSuCo', 'mucDoKhanCap', 'nguoiDung']);
         $this->incident = $suCo->toArray();
     }
 

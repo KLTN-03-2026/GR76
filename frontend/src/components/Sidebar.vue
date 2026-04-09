@@ -2,7 +2,7 @@
   <!-- Mobile Toggle -->
   <button @click="open = !open"
           class="fixed top-20 left-3 z-40 lg:hidden p-2 glass-card rounded-xl shadow-lg">
-    <Bars3Icon class="w-5 h-5 text-gray-600 dark:text-gray-300" />
+    <MenuIcon class="w-5 h-5 text-gray-600 dark:text-gray-300" />
   </button>
 
   <!-- Backdrop -->
@@ -50,20 +50,26 @@
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 import {
-  Bars3Icon, ShieldCheckIcon, ChartBarIcon,
-  MapIcon, UsersIcon, BellIcon, DocumentTextIcon, TagIcon
-} from '@heroicons/vue/24/outline'
+  Menu as MenuIcon,
+  ShieldCheck as ShieldCheckIcon,
+  LayoutDashboard as DashboardIcon,
+  Map as MapIcon,
+  FileText as IncidentIcon,
+  Users as UsersIcon,
+  Bell as BellIcon,
+  Tag as TagIcon
+} from 'lucide-vue-next'
 
 const open = ref(false)
 const $route = useRoute()
 
 const mainItems = [
-  { to: '/dashboard',    label: 'Dashboard',      icon: ChartBarIcon },
+  { to: '/dashboard',    label: 'Dashboard',      icon: DashboardIcon },
   { to: '/map',          label: 'Bản đồ SOS',     icon: MapIcon },
 ]
 
 const adminItems = [
-  { to: '/admin/incidents',     label: 'Sự cố',           icon: DocumentTextIcon },
+  { to: '/admin/incidents',     label: 'Sự cố',           icon: IncidentIcon },
   { to: '/admin/users',         label: 'Người dùng',      icon: UsersIcon },
   { to: '/admin/categories',    label: 'Danh mục',        icon: TagIcon },
   { to: '/admin/notifications', label: 'Thông báo',       icon: BellIcon },

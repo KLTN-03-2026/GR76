@@ -72,7 +72,7 @@
               <p class="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{{ inc.tieu_de }}</p>
               <p class="text-xs text-gray-400 mt-0.5">{{ formatDate(inc.thoi_gian_dang || inc.created_at) }}</p>
             </div>
-            <span :class="statusBadge(inc.trang_thai)">{{ inc.trang_thai }}</span>
+            <span :class="statusBadge(inc.trang_thai)">{{ statusLabelMap[inc.trang_thai] || inc.trang_thai }}</span>
           </div>
         </div>
       </div>
@@ -104,14 +104,6 @@
             <p class="text-xs opacity-70">Xem sự cố trên bản đồ</p>
           </div>
         </router-link>
-        <router-link to="/notifications"
-                class="w-full flex items-center gap-3 p-3.5 rounded-xl bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-900/10 dark:hover:bg-yellow-900/20 text-yellow-600 dark:text-yellow-500 font-medium text-sm transition-all">
-          <span class="text-2xl">🔔</span>
-          <div>
-            <p class="font-semibold">Thông báo</p>
-            <p class="text-xs opacity-70">{{ notifCount > 0 ? `${notifCount} thông báo chưa đọc` : 'Không có thông báo mới' }}</p>
-          </div>
-        </router-link>
         <router-link to="/profile"
                 class="w-full flex items-center gap-3 p-3.5 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/10 dark:hover:bg-purple-900/20 text-purple-600 dark:text-purple-400 font-medium text-sm transition-all">
           <span class="text-2xl">👤</span>
@@ -141,38 +133,44 @@ const incidents  = ref([])
 const loading    = ref(false)
 const showReport = ref(false)
 
-const notifCount = computed(() => notifStore.unreadCount)
 const recentIncidents = computed(() => incidents.value.slice(0, 4))
+
+const statusLabelMap = {
+  pending: 'Chờ xử lý',
+  in_progress: 'Đang xử lý',
+  resolved: 'Đã giải quyết',
+  rejected: 'Từ chối'
+}
 
 const stats = computed(() => {
   const list = incidents.value
   return {
     total:    list.length,
-    pending:  list.filter(i => i.trang_thai === 'Mới tiếp nhận').length,
-    active:   list.filter(i => i.trang_thai === 'Đang xử lý').length,
-    resolved: list.filter(i => i.trang_thai === 'Đã xác thực').length,
+    pending:  list.filter(i => i.trang_thai === 'pending').length,
+    active:   list.filter(i => i.trang_thai === 'in_progress').length,
+    resolved: list.filter(i => i.trang_thai === 'resolved').length,
   }
 })
 
 const statCards = computed(() => [
   { icon:'📋', label:'Tổng báo cáo', value: stats.value.total,    bg:'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700', color:'text-gray-800 dark:text-gray-100' },
   { icon:'⚡', label:'Đang xử lý',   value: stats.value.active,   bg:'bg-yellow-50 dark:bg-yellow-900/10 border-yellow-100 dark:border-yellow-900/20', color:'text-yellow-600' },
-  { icon:'⏳', label:'Chờ duyệt',     value: stats.value.pending,  bg:'bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/20', color:'text-blue-600' },
+  { icon:'⏳', label:'Chờ xử lý',     value: stats.value.pending,  bg:'bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/20', color:'text-blue-600' },
   { icon:'✅', label:'Đã giải quyết', value: stats.value.resolved, bg:'bg-green-50 dark:bg-green-900/10 border-green-100 dark:border-green-900/20', color:'text-green-600' },
 ])
 
 const statusSteps = computed(() => [
-  { key:'new',      icon:'📥', label:'Mới tiếp nhận', count: stats.value.pending },
+  { key:'new',      icon:'📥', label:'Chờ xử lý',    count: stats.value.pending },
   { key:'active',   icon:'⚙️', label:'Đang xử lý',   count: stats.value.active },
-  { key:'resolved', icon:'✅', label:'Đã xác thực',  count: stats.value.resolved },
-  { key:'rejected', icon:'❌', label:'Từ chối',       count: incidents.value.filter(i => i.trang_thai === 'Từ chối').length },
+  { key:'resolved', icon:'✅', label:'Đã giải quyết', count: stats.value.resolved },
+  { key:'rejected', icon:'❌', label:'Từ chối',       count: incidents.value.filter(i => i.trang_thai === 'rejected').length },
 ])
 
 const statusColors = {
-  'Mới tiếp nhận': 'badge bg-yellow-100 text-yellow-700 text-xs',
-  'Đang xử lý':   'badge bg-blue-100 text-blue-700 text-xs',
-  'Đã xác thực':  'badge bg-green-100 text-green-700 text-xs',
-  'Từ chối':      'badge bg-red-100 text-red-700 text-xs',
+  'pending':     'badge bg-yellow-100 text-yellow-700 text-xs',
+  'in_progress': 'badge bg-blue-100 text-blue-700 text-xs',
+  'resolved':    'badge bg-green-100 text-green-700 text-xs',
+  'rejected':    'badge bg-red-100 text-red-700 text-xs',
 }
 function statusBadge(s) { return statusColors[s] || 'badge bg-gray-100 text-gray-600 text-xs' }
 function formatDate(ts) {

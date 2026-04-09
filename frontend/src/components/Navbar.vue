@@ -14,7 +14,6 @@
         <router-link to="/home"            class="btn-ghost text-sm">🏠 Tổng quan</router-link>
         <router-link to="/map"             class="btn-ghost text-sm">🗺️ Bản đồ</router-link>
         <router-link to="/my-incidents"    class="btn-ghost text-sm">📋 Sự cố của tôi</router-link>
-        <router-link to="/notifications"   class="btn-ghost text-sm">🔔 Thông báo</router-link>
       </template>
       <template v-if="isAdmin">
         <router-link to="/dashboard"             class="btn-ghost text-sm">📊 Dashboard</router-link>

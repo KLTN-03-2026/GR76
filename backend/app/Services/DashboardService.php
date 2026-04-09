@@ -35,10 +35,10 @@ class DashboardService
 
         return [
             'tong_su_co'        => $total,
-            'moi_tiep_nhan'     => $byStatus->get('Mới tiếp nhận', 0),
-            'dang_xu_ly'        => $byStatus->get('Đang xử lý',    0),
-            'da_xac_thuc'       => $byStatus->get('Đã xác thực',   0),
-            'tu_choi'           => $byStatus->get('Từ chối',        0),
+            'pending'           => $byStatus->get('pending', 0),
+            'in_progress'       => $byStatus->get('in_progress', 0),
+            'resolved'          => $byStatus->get('resolved', 0),
+            'rejected'          => $byStatus->get('rejected', 0),
             'theo_loai_su_co'   => $byCategory,
             'theo_trang_thai'   => $byStatus,
             'moi_nhat'          => $latest,
