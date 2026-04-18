@@ -7,59 +7,58 @@ echo ============================================================
 echo           SOS SYSTEM - DEMO LAUNCHER
 echo ============================================================
 echo.
-echo   Backend  (Laravel)   - http://localhost:8000
-echo   Frontend (Vite)      - http://localhost:5173
-echo   AI Module (FastAPI)  - http://localhost:8001
-echo   Reverb  (WebSocket)  - ws://localhost:8080
+echo   Backend   : http://localhost:8000
+echo   Frontend  : http://localhost:5173
+echo   AI Module : http://localhost:8001
+echo   Reverb    : ws://localhost:8080
 echo.
 echo ============================================================
 echo.
 
-:: Configuration
-set "PROJECT_DIR=%~dp0"
-set "BACKEND_DIR=%PROJECT_DIR%backend"
-set "FRONTEND_DIR=%PROJECT_DIR%frontend"
-set "AI_DIR=%PROJECT_DIR%ai_module"
+:: ── Paths ────────────────────────────────────────────────────────
+set PROJECT_DIR=%~dp0
+set BACKEND_DIR=%PROJECT_DIR%backend
+set FRONTEND_DIR=%PROJECT_DIR%frontend
+set AI_DIR=%PROJECT_DIR%ai_module
 
-:: Step 1: Check prerequisites
+:: ── Step 1: Check prerequisites ──────────────────────────────────
 echo [1/6] Checking prerequisites...
-echo.
 
 where php >nul 2>&1
-if %errorlevel% neq 0 (
+if errorlevel 1 (
     echo   [X] PHP not found. Install XAMPP and add PHP to PATH.
     pause
     exit /b 1
 )
-echo   [OK] PHP ready
+echo   [OK] PHP found
 
 where node >nul 2>&1
-if %errorlevel% neq 0 (
-    echo   [X] Node.js not found. Download from https://nodejs.org
+if errorlevel 1 (
+    echo   [X] Node.js not found. Get it at https://nodejs.org
     pause
     exit /b 1
 )
-echo   [OK] Node.js ready
+echo   [OK] Node.js found
 
 where python >nul 2>&1
-if %errorlevel% neq 0 (
-    echo   [X] Python not found. Download from https://python.org
+if errorlevel 1 (
+    echo   [X] Python not found. Get it at https://python.org
     pause
     exit /b 1
 )
-echo   [OK] Python ready
+echo   [OK] Python found
 echo.
 
-:: Step 2: Backend setup
+:: ── Step 2: Backend ──────────────────────────────────────────────
 echo [2/6] Preparing Backend (Laravel)...
 
 if not exist "%BACKEND_DIR%\.env" (
-    echo   Creating .env from .env.example...
+    echo   Creating .env...
     copy "%BACKEND_DIR%\.env.example" "%BACKEND_DIR%\.env" >nul
 )
 
 findstr /C:"APP_KEY=base64" "%BACKEND_DIR%\.env" >nul 2>&1
-if %errorlevel% neq 0 (
+if errorlevel 1 (
     echo   Generating APP_KEY...
     pushd "%BACKEND_DIR%"
     php artisan key:generate --ansi
@@ -67,22 +66,21 @@ if %errorlevel% neq 0 (
 )
 
 if not exist "%BACKEND_DIR%\vendor" (
-    echo   Installing composer dependencies...
+    echo   Installing Composer dependencies...
     pushd "%BACKEND_DIR%"
-    composer install --no-interaction --prefer-dist
+    composer install --no-interaction --prefer-dist --quiet
     popd
 )
 
-echo   Running database migrations...
 pushd "%BACKEND_DIR%"
-php artisan migrate --force 2>nul
-php artisan storage:link 2>nul
+php artisan migrate --force >nul 2>&1
+php artisan storage:link >nul 2>&1
 popd
 
 echo   [OK] Backend ready!
 echo.
 
-:: Step 3: Frontend setup
+:: ── Step 3: Frontend ─────────────────────────────────────────────
 echo [3/6] Preparing Frontend (Vue + Vite)...
 
 if not exist "%FRONTEND_DIR%\node_modules" (
@@ -94,20 +92,27 @@ if not exist "%FRONTEND_DIR%\node_modules" (
 echo   [OK] Frontend ready!
 echo.
 
-:: Step 4: AI Module setup
-echo [4/6] Preparing AI Module (FastAPI)...
+:: ── Step 4: AI Module ────────────────────────────────────────────
+echo [4/6] Preparing AI Module (Python)...
 
 if not exist "%AI_DIR%\venv" (
     echo   Creating virtual environment...
-    pushd "%AI_DIR%"
-    python -m venv venv
-    popd
+    python -m venv "%AI_DIR%\venv"
 )
+
+if not exist "%AI_DIR%\.env" (
+    echo   Creating AI .env...
+    copy "%AI_DIR%\.env.example" "%AI_DIR%\.env" >nul
+)
+
+echo   Installing AI dependencies...
+"%AI_DIR%\venv\Scripts\pip.exe" install -r "%AI_DIR%\requirements.txt" -q --disable-pip-version-check
+
 echo   [OK] AI Module ready!
 echo.
 
-:: Step 5: Kill existing processes on our ports
-echo [5/6] Cleaning up ports...
+:: ── Step 5: Clear ports ──────────────────────────────────────────
+echo [5/6] Clearing ports...
 
 for %%p in (8000 5173 8001 8080) do (
     for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":%%p " ^| findstr "LISTENING" 2^>nul') do (
@@ -117,62 +122,63 @@ for %%p in (8000 5173 8001 8080) do (
 echo   [OK] Ports cleared!
 echo.
 
-:: Step 6: Launch all services
+:: ── Step 6: Launch services ──────────────────────────────────────
 echo [6/6] Starting all services...
 echo.
 
-echo   [1] Starting Backend - http://localhost:8000
-start "SOS-Backend" cmd /k "title SOS-Backend && cd /d %BACKEND_DIR% && php artisan serve --port=8000"
+echo   Starting Backend...
+start "SOS-Backend"  cmd /k "title SOS-Backend & cd /d %BACKEND_DIR% & php artisan serve --port=8000"
 
 timeout /t 2 /nobreak >nul
 
-echo   [2] Starting Reverb WebSocket - ws://localhost:8080
-start "SOS-Reverb" cmd /k "title SOS-Reverb && cd /d %BACKEND_DIR% && php artisan reverb:start --port=8080"
+echo   Starting Reverb...
+start "SOS-Reverb"   cmd /k "title SOS-Reverb & cd /d %BACKEND_DIR% & php artisan reverb:start --port=8080"
 
-timeout /t 1 /nobreak >nul
+echo   Starting Queue Worker...
+start "SOS-Queue"    cmd /k "title SOS-Queue & cd /d %BACKEND_DIR% & php artisan queue:work --tries=3 --timeout=60"
 
-echo   [3] Starting Queue Worker
-start "SOS-Queue" cmd /k "title SOS-Queue && cd /d %BACKEND_DIR% && php artisan queue:work --tries=3 --timeout=60"
+echo   Starting Scheduler (auto-close incidents)...
+start "SOS-Scheduler" cmd /k "title SOS-Scheduler & cd /d %BACKEND_DIR% & php artisan schedule:work"
 
-echo   [4] Starting Frontend - http://localhost:5173
-start "SOS-Frontend" cmd /k "title SOS-Frontend && cd /d %FRONTEND_DIR% && npm run dev"
+echo   Starting Frontend...
+start "SOS-Frontend" cmd /k "title SOS-Frontend & cd /d %FRONTEND_DIR% & npm run dev"
 
-timeout /t 1 /nobreak >nul
+echo   Starting AI Module...
+start "SOS-AI"       cmd /k "title SOS-AI & cd /d %AI_DIR% & venv\Scripts\python.exe api.py"
 
-echo   [5] Starting AI Module - http://localhost:8001
-start "SOS-AI" cmd /k "title SOS-AI && cd /d %AI_DIR% && venv\Scripts\activate && pip install -r requirements.txt -q && python api.py"
+:: ── Wait then open browser ───────────────────────────────────────
+echo.
+echo   Waiting for services to start (10 seconds)...
+timeout /t 10 /nobreak >nul
 
 echo.
 echo ============================================================
 echo.
 echo   ALL SERVICES STARTED!
 echo.
-echo   Open browser: http://localhost:5173
-echo.
-echo   Backend  : http://localhost:8000/api
 echo   Frontend : http://localhost:5173
+echo   Backend  : http://localhost:8000/api
 echo   AI Docs  : http://localhost:8001/docs
-echo   Reverb   : ws://localhost:8080
 echo.
 echo   Press any key to STOP all services.
 echo.
 echo ============================================================
 echo.
 
-timeout /t 3 /nobreak >nul
 start http://localhost:5173
 
 pause >nul
 
-:: Cleanup
+:: ── Cleanup ──────────────────────────────────────────────────────
 echo.
 echo Stopping all services...
 
-taskkill /FI "WINDOWTITLE eq SOS-Backend*" /F >nul 2>&1
-taskkill /FI "WINDOWTITLE eq SOS-Reverb*" /F >nul 2>&1
-taskkill /FI "WINDOWTITLE eq SOS-Queue*" /F >nul 2>&1
+taskkill /FI "WINDOWTITLE eq SOS-Backend*"  /F >nul 2>&1
+taskkill /FI "WINDOWTITLE eq SOS-Reverb*"   /F >nul 2>&1
+taskkill /FI "WINDOWTITLE eq SOS-Queue*"    /F >nul 2>&1
 taskkill /FI "WINDOWTITLE eq SOS-Frontend*" /F >nul 2>&1
-taskkill /FI "WINDOWTITLE eq SOS-AI*" /F >nul 2>&1
+taskkill /FI "WINDOWTITLE eq SOS-Scheduler*" /F >nul 2>&1
+taskkill /FI "WINDOWTITLE eq SOS-AI*"       /F >nul 2>&1
 
 for %%p in (8000 5173 8001 8080) do (
     for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":%%p " ^| findstr "LISTENING" 2^>nul') do (
@@ -180,6 +186,6 @@ for %%p in (8000 5173 8001 8080) do (
     )
 )
 
-echo All services stopped!
+echo Done. All services stopped.
 echo.
 pause

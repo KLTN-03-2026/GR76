@@ -5,12 +5,17 @@
         <!-- Backdrop -->
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="$emit('update:modelValue', false)" />
         <!-- Panel -->
-        <div :class="['relative glass-card w-full shadow-2xl z-10 animate-slide-up', sizeClass]">
+        <div :class="['relative w-full z-10 animate-slide-up rounded-lg', sizeClass]"
+             style="background: var(--color-card); border: 1px solid var(--color-border); box-shadow: 0 16px 48px rgba(0,0,0,0.15);">
           <!-- Header -->
-          <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-            <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100">{{ title }}</h2>
+          <div class="flex items-center justify-between px-6 py-4"
+               style="border-bottom: 1px solid var(--color-border);">
+            <h2 class="text-lg font-semibold" style="color: var(--color-text); letter-spacing: -0.2px;">{{ title }}</h2>
             <button @click="$emit('update:modelValue', false)"
-                    class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 transition-colors">
+                    class="p-1.5 rounded-md transition-colors"
+                    style="color: var(--color-text-muted);"
+                    onmouseover="this.style.background='var(--color-surface-100)'"
+                    onmouseout="this.style.background='transparent'">
               <XMarkIcon class="w-5 h-5" />
             </button>
           </div>

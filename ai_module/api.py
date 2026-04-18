@@ -25,6 +25,11 @@ import os
 import io
 import json
 import base64
+import sys
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+
 import uvicorn
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Form, Query

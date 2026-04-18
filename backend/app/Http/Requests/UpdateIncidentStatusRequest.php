@@ -14,7 +14,7 @@ class UpdateIncidentStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'trang_thai' => 'required|string|in:Mới tiếp nhận,Đang xử lý,Đã xử lý,Đã hủy',
+            'trang_thai' => 'required|string|in:pending,in_progress,resolved,rejected',
         ];
     }
 }
