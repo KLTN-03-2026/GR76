@@ -81,9 +81,14 @@ def analyze_image_with_groq(image_base64: str, model: str = None) -> str:
         resp.raise_for_status()
 
         data = resp.json()
-        description = data["choices"][0]["message"]["content"].strip()
-        print(f"  [Groq] OK! Description ({len(description)} chars): {description[:100]}...")
-        return description
+        if "choices" in data and len(data["choices"]) > 0:
+            description = data["choices"][0]["message"].get("content", "").strip()
+            safe_desc = description[:100].encode('ascii', 'ignore').decode('ascii')
+            print(f"  [Groq] OK! Description ({len(description)} chars): {safe_desc}...")
+            return description
+        else:
+            print(f"  [Groq] Unexpected response format.")
+            return ""
 
     except requests.exceptions.Timeout:
         print("  [Groq] Request timed out.")

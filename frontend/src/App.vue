@@ -1,7 +1,6 @@
 <template>
   <div class="min-h-screen" :class="darkMode ? 'dark' : ''">
-    <div
-      class="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div class="min-h-screen" style="background-color: var(--color-bg); color: var(--color-text);">
       <Navbar v-if="isLoggedIn" @toggle-dark="toggleDark" :dark-mode="darkMode" />
       <div class="flex">
         <Sidebar v-if="isLoggedIn && isAdmin" />
@@ -55,19 +54,5 @@ onMounted(() => applyDark(darkMode.value))
 .page-leave-to {
   opacity: 0;
   transform: translateY(-6px);
-}
-
-input {
-  border-radius: 8px;
-  padding: 10px;
-  border: 1px solid #ccc;
-  width: 100%;
-  margin-bottom: 12px;
-}
-
-input:focus {
-  border-color: #2563eb;
-  outline: none;
-  box-shadow: 0 0 4px rgba(37, 99, 235, 0.5);
 }
 </style>
