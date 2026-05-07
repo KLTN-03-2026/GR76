@@ -16,11 +16,21 @@ use App\Http\Controllers\Api\AdminNotificationController;
 use App\Http\Controllers\Api\MapController;
 use App\Http\Controllers\Api\PublicController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\ForgotPasswordController;
+use App\Http\Controllers\Api\ImageAnalysisController;
 
 // Public Auth routes
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/admin/login', [AuthController::class, 'loginAdmin']);
 Route::post('/register', [AuthController::class, 'register']);
+
+// Password Reset (OTP-based)
+Route::post('/forgot-password',    [ForgotPasswordController::class, 'sendOtp']);
+Route::post('/reset-password',     [ForgotPasswordController::class, 'resetPassword']);
+
+// Email Verification
+Route::post('/send-verify-email',  [ForgotPasswordController::class, 'sendVerifyEmail']);
+Route::post('/verify-email',       [ForgotPasswordController::class, 'verifyEmail']);
 
 // Public incident routes (no auth required)
 Route::get('/public/map', [PublicController::class, 'map']);
@@ -80,4 +90,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // AI API
     Route::post('/ai/phan-tich/{id}', [AiController::class, 'analyze']);
     Route::post('/ai/check-duplicate/{id}', [AiController::class, 'checkDuplicate']);
+
+    // Image Analysis (Groq Vision)
+    Route::post('/analyze-image', [ImageAnalysisController::class, 'analyze']);
 });

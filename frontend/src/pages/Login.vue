@@ -36,7 +36,12 @@
           <input v-model="form.email" type="email" :required="!isAdmin" class="input-field" placeholder="you@example.com" autocomplete="email" />
         </div>
         <div>
-          <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Mật khẩu</label>
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Mật khẩu</label>
+            <router-link v-if="!isAdmin" to="/forgot-password" class="text-xs text-primary-600 dark:text-primary-400 hover:underline">
+              Quên mật khẩu?
+            </router-link>
+          </div>
           <div class="relative">
             <input v-model="form.mat_khau" :type="showPwd ? 'text' : 'password'" required class="input-field pr-11" placeholder="••••••••" autocomplete="current-password" />
             <button type="button" @click="showPwd = !showPwd" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">

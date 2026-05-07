@@ -309,68 +309,70 @@ function onFileChange(e) {
 
 async function analyzeImageWithAI(file) {
   aiAnalyzing.value = true
-  aiWarning.value = null
+  aiWarning.value   = null
+
   try {
     // Convert file to base64
     const base64 = await new Promise((resolve, reject) => {
       const reader = new FileReader()
-      reader.onload = () => resolve(reader.result.split(',')[1])
+      reader.onload  = () => resolve(reader.result.split(',')[1])
       reader.onerror = reject
       reader.readAsDataURL(file)
     })
 
-    // Call AI predict-json endpoint
-    const resp = await fetch('http://localhost:8001/predict-json', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tieu_de: form.tieu_de || 'Su co',
-        noi_dung: '',
-        image_base64: base64,
-      })
+    // Gọi Laravel backend → Laravel gọi Groq API (không cần Python service)
+    const resp = await api.post('/analyze-image', {
+      image_base64: base64,
+      tieu_de:      form.tieu_de?.trim() || 'Sự cố',
     })
 
-    if (resp.ok) {
-      const data = await resp.json()
-      console.log('[AI Response]', data)
+    const data = resp.data
+    console.log('[Groq AI Response]', data)
 
-      // Auto-fill noi dung from Groq Vision description
-      if (data.image_description) {
-        form.noi_dung = data.image_description
-        aiDone.value = true
-        toast.success('AI da phan tich anh thanh cong!')
+    if (!data.success) {
+      const errorCode = data.error_code
+      if (errorCode === 401) {
+        toast.error('🔑 Groq API Key hết hạn! Cần cập nhật key mới tại console.groq.com/keys → backend/.env → GROQ_API_KEY')
+      } else {
+        toast.warning('⚠️ AI phân tích thất bại: ' + (data.error || 'Lỗi không xác định'))
       }
-
-      // Auto-fill loai su co & muc do (always override from AI)
-      if (data.id_loai_su_co && data.id_loai_su_co > 0) {
-        form.id_loai_su_co = data.id_loai_su_co
-      }
-      if (data.id_muc_do && data.id_muc_do > 0) {
-        form.id_muc_do = data.id_muc_do
-      }
-
-      // Spam warning
-      if (data.is_spam === 1) {
-        aiWarning.value = {
-          type: 'spam',
-          title: 'Noi dung bi phat hien la spam',
-          message: `Do tin cay: ${(data.do_tin_cay * 100).toFixed(0)}%. Bao cao nay co the bi tu choi.`
-        }
-        toast.warning('Noi dung co dau hieu spam!')
-      }
-
-      // Duplicate warning
-      if (data.is_duplicate === 1) {
-        aiWarning.value = {
-          type: 'duplicate',
-          title: 'Su co co the bi trung lap',
-          message: `Do tuong dong: ${(data.similarity_score * 100).toFixed(0)}%. Su co tuong tu da duoc bao cao truoc do.`
-        }
-        toast.warning('Co su co tuong tu da duoc bao cao!')
-      }
+      return
     }
+
+    let anyFill = false
+
+    // 1. Điền Nội dung từ Groq Vision
+    if (data.image_description && data.image_description.trim()) {
+      form.noi_dung = data.image_description.trim()
+      aiDone.value  = true
+      anyFill = true
+    }
+
+    // 2. Chọn Loại sự cố (Number() để tránh type mismatch với <select>)
+    if (data.id_loai_su_co && Number(data.id_loai_su_co) > 0) {
+      form.id_loai_su_co = Number(data.id_loai_su_co)
+      anyFill = true
+    }
+
+    // 3. Chọn Mức độ khẩn cấp
+    if (data.id_muc_do && Number(data.id_muc_do) > 0) {
+      form.id_muc_do = Number(data.id_muc_do)
+      anyFill = true
+    }
+
+    if (anyFill) {
+      toast.success('🤖 AI đã phân tích và tự động điền thông tin!')
+    } else {
+      toast.info('🤖 AI chưa xác định được thông tin. Vui lòng điền thủ công.')
+    }
+
   } catch (err) {
-    console.warn('AI image analysis failed:', err)
+    console.warn('[AI] Lỗi phân tích ảnh:', err)
+    if (err.response?.status === 500) {
+      toast.warning('⚠️ Groq API lỗi. Vui lòng điền thủ công.')
+    } else {
+      toast.warning('⚠️ Không thể phân tích ảnh. Vui lòng điền thủ công.')
+    }
   } finally {
     aiAnalyzing.value = false
   }

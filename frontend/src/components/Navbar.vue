@@ -2,12 +2,18 @@
   <nav class="fixed top-0 left-0 right-0 z-50 h-16 px-6 flex items-center justify-between"
        style="background: var(--color-card); border-bottom: 1px solid var(--color-border); backdrop-filter: blur(12px);">
     <!-- Logo -->
-    <div class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-std flex items-center justify-center" style="background: var(--color-brand);">
-        <ShieldExclamationIcon class="w-5 h-5 text-white" />
+    <router-link to="/home" class="flex items-center gap-2.5 select-none">
+      <!-- Shield SVG Logo -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" class="w-8 h-8 shrink-0">
+        <path d="M24 4L6 11v13c0 10.5 7.5 18.5 18 21 10.5-2.5 18-10.5 18-21V11L24 4Z" fill="#dc2626"/>
+        <path d="M24 8L9 14v10c0 8.5 6 15 15 17.5 9-2.5 15-9 15-17.5V14L24 8Z" fill="#ef4444" opacity="0.35"/>
+        <text x="24" y="30" font-family="Arial Black,sans-serif" font-weight="900" font-size="13.5" fill="white" text-anchor="middle" letter-spacing="-0.5">SOS</text>
+      </svg>
+      <div class="hidden sm:block leading-tight">
+        <div class="font-bold text-sm" style="color: var(--color-text); letter-spacing: -0.3px;">SOS System</div>
+        <div class="text-[10px]" style="color: var(--color-text-muted);">Hệ thống báo cáo sự cố</div>
       </div>
-      <span class="font-semibold text-lg hidden sm:block" style="letter-spacing: -0.4px; color: var(--color-text);">SOS System</span>
-    </div>
+    </router-link>
 
     <!-- Nav Links -->
     <div class="hidden md:flex items-center gap-1">
@@ -84,7 +90,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import NotificationBell from '@/components/NotificationBell.vue'
 import {
-  ShieldExclamationIcon, SunIcon, MoonIcon,
+  SunIcon, MoonIcon,
   ChevronDownIcon, UserCircleIcon, ArrowRightOnRectangleIcon
 } from '@heroicons/vue/24/outline'
 

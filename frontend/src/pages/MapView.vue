@@ -26,10 +26,18 @@
         <div v-else v-for="inc in filteredIncidents" :key="inc.id_su_co"
              @click="selectFromSidebar(inc)"
              :class="['flex items-start gap-3 px-4 py-3 cursor-pointer border-b border-gray-800 transition-colors',
-                      selected?.id_su_co === inc.id_su_co ? 'bg-gray-700' : 'hover:bg-gray-800']">
-          <!-- Pulse dot -->
-          <div class="mt-1 shrink-0 relative">
-            <span :class="['w-3 h-3 rounded-full block', urgencyDot(inc)]"></span>
+                      selected?.id_su_co === inc.id_su_co ? 'bg-gray-700/80' : 'hover:bg-gray-800/60']">
+          <!-- Thumbnail -->
+          <div class="shrink-0 mt-0.5">
+            <img v-if="inc.hinh_anh_url"
+                 :src="inc.hinh_anh_url"
+                 class="w-10 h-10 rounded-lg object-cover bg-gray-700"
+                 @error="e => e.target.style.display='none'"
+            />
+            <div v-else
+                 :class="['w-10 h-10 rounded-lg flex items-center justify-center text-lg', urgencyDot(inc).replace('bg-','bg-').replace('-500','-900/50').replace('-400','-900/50').replace('-400','-900/50')]">
+              {{ incidentIcon(inc) }}
+            </div>
           </div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-semibold text-white truncate">{{ inc.tieu_de }}</p>
@@ -97,15 +105,26 @@
         <div v-if="selected"
              class="absolute right-4 top-16 w-80 z-[1000] bg-gray-900/95 backdrop-blur-lg text-white rounded-2xl shadow-2xl border border-gray-700 overflow-hidden">
           <!-- Image -->
-          <div v-if="selected.hinh_anh" class="relative cursor-pointer" @click="openImageViewer(selected.hinh_anh, selected.tieu_de)">
-            <img :src="selected.hinh_anh" class="w-full h-36 object-cover" />
-            <div class="absolute inset-0 bg-gradient-to-t from-gray-900/80 to-transparent" />
-            <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/30">
-              <span class="text-white text-sm bg-black/50 px-3 py-1.5 rounded-full">🔍 Xem ảnh lớn</span>
+          <div class="relative">
+            <!-- Có ảnh và chưa lỗi -->
+            <div v-if="selected.hinh_anh_url && !imageError"
+                 class="relative cursor-pointer"
+                 @click="openImageViewer(selected.hinh_anh_url, selected.tieu_de)">
+              <img
+                :src="selected.hinh_anh_url"
+                class="w-full h-36 object-cover block"
+                @error="imageError = true"
+              />
+              <div class="absolute inset-0 bg-gradient-to-t from-gray-900/70 to-transparent pointer-events-none" />
+              <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/25">
+                <span class="text-white text-xs bg-black/60 px-3 py-1 rounded-full">🔍 Xem ảnh lớn</span>
+              </div>
             </div>
-          </div>
-          <div v-else class="h-24 bg-gray-800 flex items-center justify-center text-gray-500 text-sm">
-            📷 Chưa có hình ảnh
+            <!-- Không có ảnh hoặc ảnh lỗi -->
+            <div v-else class="h-20 bg-gray-800/70 flex items-center justify-center gap-2 text-gray-500 text-xs">
+              <span>📷</span>
+              <span>{{ imageError ? 'Không tải được ảnh' : 'Chưa có hình ảnh' }}</span>
+            </div>
           </div>
           <!-- Content -->
           <div class="p-4">
@@ -178,10 +197,10 @@ const activeFilter = ref('all')
 const mapRef      = ref(null)
 const accepting   = ref(false)
 
-// Image viewer state
 const showImageViewer = ref(false)
 const viewerImageSrc  = ref('')
 const viewerImageAlt  = ref('')
+const imageError      = ref(false)  // tracks if selected incident's image failed to load
 
 function openImageViewer(src, alt = '') {
   viewerImageSrc.value = src
@@ -237,6 +256,17 @@ function urgencyDot(inc) {
   return 'bg-green-400'
 }
 
+// ── Incident icon (used in sidebar thumbnail fallback) ────────────
+function incidentIcon(inc) {
+  const cat = inc.loai_su_co?.ten_loai || inc.loaiSuCo?.ten_loai || ''
+  const lower = cat.toLowerCase()
+  if (lower.includes('cháy') || lower.includes('lửa')) return '🔥'
+  if (lower.includes('tai nạn') || lower.includes('giao thông')) return '🚗'
+  if (lower.includes('ngập') || lower.includes('lũ')) return '🌊'
+  if (lower.includes('cây') || lower.includes('gãy')) return '🌳'
+  return '🚨'
+}
+
 // ── Status badge ──────────────────────────────────────────────────
 const statusStyles = {
   'pending':     'bg-yellow-700/50 text-yellow-300',
@@ -280,7 +310,8 @@ function onMapClick({ lat, lng }) {
 
 // Called when clicking a Leaflet marker — only set selected, do NOT fly
 function onMarkerClick(inc) {
-  selected.value = inc
+  imageError.value = false   // reset image error state
+  selected.value   = inc
 }
 
 // Accept incident — change status to in_progress
@@ -300,7 +331,8 @@ async function acceptIncident(inc) {
 
 // Called from sidebar list — set selected AND fly to incident on map
 function selectFromSidebar(inc) {
-  selected.value = inc
+  imageError.value = false   // reset image error state
+  selected.value   = inc
   const lat = parseFloat(inc.vi_do)
   const lng = parseFloat(inc.kinh_do)
   if (!isNaN(lat) && !isNaN(lng)) {
