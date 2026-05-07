@@ -3,7 +3,7 @@
        @click="$emit('click', incident)">
     <!-- Image thumbnail -->
     <div v-if="!compact" class="relative rounded-xl overflow-hidden">
-      <img v-if="incident.hinh_anh" :src="incident.hinh_anh" class="w-full h-32 object-cover" />
+      <img v-if="incident.hinh_anh_url" :src="incident.hinh_anh_url" class="w-full h-32 object-cover" @error="e => e.target.style.display='none'" />
       <div v-else class="w-full h-24 bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400 text-xs">
         📷 Chưa có hình ảnh
       </div>

@@ -45,8 +45,8 @@
   <Modal v-model="showDetail" :title="selected?.tieu_de || ''" size="md">
     <div v-if="selected" class="space-y-4">
       <!-- Image -->
-      <div v-if="selected.hinh_anh" class="cursor-pointer" @click="openImageViewer(selected.hinh_anh, selected.tieu_de)">
-        <img :src="selected.hinh_anh" class="w-full h-48 object-cover rounded-xl hover:opacity-80 transition-opacity" />
+      <div v-if="selected.hinh_anh_url" class="cursor-pointer" @click="openImageViewer(selected.hinh_anh_url, selected.tieu_de)">
+        <img :src="selected.hinh_anh_url" class="w-full h-48 object-cover rounded-xl hover:opacity-80 transition-opacity" @error="e => e.target.style.display='none'" />
       </div>
       <div v-else class="w-full h-32 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-400 text-sm">
         📷 Chưa có hình ảnh

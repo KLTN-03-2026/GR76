@@ -141,15 +141,17 @@ class AiService
     private function analyzeMultimodal(SuCo $suCo): array
     {
         try {
-            // Resolve the image file path from storage
-            $imagePath = Storage::disk('public')->path($suCo->hinh_anh);
+            // hinh_anh is stored as '/storage/su_co_images/xxx.jpg'
+            // Strip leading '/storage/' to get the relative path for Storage::disk('public')
+            $storagePath = ltrim(str_replace('/storage/', '', $suCo->hinh_anh), '/');
+            $imagePath   = Storage::disk('public')->path($storagePath);
 
             if (!file_exists($imagePath)) {
                 Log::warning("AI multimodal: image not found at {$imagePath}, falling back to text.");
                 return $this->analyzeTextOnly($suCo, $suCo->noi_dung ?? '');
             }
 
-            $response = Http::timeout(15)
+            $response = Http::timeout(30)
                 ->attach('image', file_get_contents($imagePath), basename($imagePath))
                 ->post("{$this->aiUrl}/analyze-with-image", [
                     'id_su_co' => $suCo->id_su_co,
@@ -166,7 +168,6 @@ class AiService
             Log::warning('AI multimodal error: ' . $e->getMessage());
         }
 
-        // Fallback to text-only
         return $this->analyzeTextOnly($suCo, $suCo->noi_dung ?? '');
     }
 

@@ -4,8 +4,9 @@ const routes = [
   { path: '/', redirect: '/home' },
 
   // Auth (guest only)
-  { path: '/login',    component: () => import('@/pages/Login.vue'),    meta: { guest: true } },
-  { path: '/register', component: () => import('@/pages/Register.vue'), meta: { guest: true } },
+  { path: '/login',           component: () => import('@/pages/Login.vue'),          meta: { guest: true } },
+  { path: '/register',        component: () => import('@/pages/Register.vue'),       meta: { guest: true } },
+  { path: '/forgot-password', component: () => import('@/pages/ForgotPassword.vue'), meta: { guest: true } },
 
   // Public
   { path: '/public', component: () => import('@/pages/PublicMap.vue') },

@@ -30,13 +30,19 @@ export default api
 
 // ── Auth ─────────────────────────────────────────────────────────
 export const authApi = {
-  login:          (data) => api.post('/login', data),
-  loginAdmin:     (data) => api.post('/admin/login', data),
-  register:       (data) => api.post('/register', data),
-  logout:         ()     => api.post('/logout'),
-  me:             ()     => api.get('/me'),
-  updateProfile:  (d)    => api.put('/me', d),
-  changePassword: (d)    => api.patch('/me/password', d)
+  login:           (data) => api.post('/login', data),
+  loginAdmin:      (data) => api.post('/admin/login', data),
+  register:        (data) => api.post('/register', data),
+  logout:          ()     => api.post('/logout'),
+  me:              ()     => api.get('/me'),
+  updateProfile:   (d)    => api.put('/me', d),
+  changePassword:  (d)    => api.patch('/me/password', d),
+  // Password reset
+  forgotPassword:  (d)    => api.post('/forgot-password', d),
+  resetPassword:   (d)    => api.post('/reset-password', d),
+  // Email verification
+  sendVerifyEmail: (d)    => api.post('/send-verify-email', d),
+  verifyEmail:     (d)    => api.post('/verify-email', d),
 }
 
 // ── Incidents (User) ─────────────────────────────────────────────
