@@ -31,6 +31,9 @@ class DatabaseSeeder extends Seeder
             Admin::create(array_merge($a, ['mat_khau' => Hash::make('password')]));
         }
 
+        // ── Admin minhquan1810 ────────────────────────────────────────
+        $this->call(AdminMinhQuanSeeder::class);
+
         // ── Users ────────────────────────────────────────────────────
         $users = [
             ['ten'=>'Nguyễn Văn An',   'email'=>'an.nguyen@gmail.com',   'so_dien_thoai'=>'0901234561'],
