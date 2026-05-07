@@ -75,6 +75,11 @@ if not exist "%BACKEND_DIR%\vendor" (
 pushd "%BACKEND_DIR%"
 php artisan migrate --force >nul 2>&1
 php artisan storage:link >nul 2>&1
+if not exist ".seeded" (
+    echo   Seeding database...
+    php artisan db:seed --force >nul 2>&1
+    echo seeded > .seeded
+)
 popd
 
 echo   [OK] Backend ready!
