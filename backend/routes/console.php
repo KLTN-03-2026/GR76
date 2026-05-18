@@ -8,6 +8,6 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Tự động đóng sự cố chưa xử lý sau 24 giờ - chạy mỗi giờ
-Schedule::command('incidents:auto-close')->hourly();
+// Tự động resolve sự cố sau 12 giờ - chạy mỗi phút để gần real-time
+Schedule::command('incidents:auto-close')->everyMinute();
 

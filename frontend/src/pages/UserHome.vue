@@ -120,7 +120,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { PlusCircleIcon } from '@heroicons/vue/24/outline'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notifications'
@@ -186,5 +186,22 @@ async function load() {
   finally { loading.value = false }
 }
 
-onMounted(() => { load(); notifStore.fetchNotifications() })
+// Handle real-time auto-resolve: update local list or reload
+function onAutoResolved(e) {
+  const { id_su_co, trang_thai } = e.detail
+  const inc = incidents.value.find(i => i.id_su_co === id_su_co)
+  if (inc) {
+    inc.trang_thai = trang_thai
+  }
+}
+
+onMounted(() => {
+  load()
+  notifStore.fetchNotifications()
+  window.addEventListener('incident-auto-resolved', onAutoResolved)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('incident-auto-resolved', onAutoResolved)
+})
 </script>

@@ -2,7 +2,7 @@
   <div class="p-6 max-w-5xl mx-auto space-y-6">
     <div>
       <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">🔔 Quản lý Thông báo</h1>
-      <p class="text-sm text-gray-500 mt-0.5">Gửi thông báo đến người dùng</p>
+      <p class="text-sm text-gray-500 mt-0.5">Gửi thông báo đến toàn bộ hoặc từng người dùng</p>
     </div>
 
     <div class="grid lg:grid-cols-5 gap-6">
@@ -10,15 +10,45 @@
       <div class="lg:col-span-2 glass-card p-6">
         <h2 class="font-semibold text-gray-700 dark:text-gray-200 mb-5">📩 Gửi thông báo mới</h2>
         <form @submit.prevent="sendNotification" class="space-y-4">
+
+          <!-- Recipient toggle -->
           <div>
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Người nhận</label>
+            <div class="flex rounded-xl overflow-hidden border border-gray-200 dark:border-gray-600">
+              <button type="button" @click="broadcastMode = true"
+                :class="['flex-1 py-2.5 text-sm font-semibold transition-colors',
+                         broadcastMode
+                           ? 'bg-primary-600 text-white'
+                           : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100']">
+                🌐 Tất cả người dùng
+              </button>
+              <button type="button" @click="broadcastMode = false"
+                :class="['flex-1 py-2.5 text-sm font-semibold transition-colors',
+                         !broadcastMode
+                           ? 'bg-primary-600 text-white'
+                           : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100']">
+                👤 Chọn 1 người
+              </button>
+            </div>
+          </div>
+
+          <!-- Single user select (hidden in broadcast mode) -->
+          <div v-if="!broadcastMode">
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Người nhận *</label>
-            <select v-model="form.id_nguoi_dung" required class="select-field">
+            <select v-model="form.id_nguoi_dung" :required="!broadcastMode" class="select-field">
               <option value="">-- Chọn người dùng --</option>
               <option v-for="u in users" :key="u.id_nguoi_dung" :value="u.id_nguoi_dung">
                 {{ u.ten }} ({{ u.email }})
               </option>
             </select>
           </div>
+
+          <!-- Broadcast badge -->
+          <div v-else class="rounded-xl bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-700 px-4 py-3">
+            <p class="text-sm font-semibold text-primary-700 dark:text-primary-300">🌐 Gửi đến toàn bộ người dùng</p>
+            <p class="text-xs text-primary-500 mt-0.5">Thông báo sẽ được gửi đến {{ users.length }} người dùng</p>
+          </div>
+
           <div>
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Tiêu đề *</label>
             <input v-model="form.tieu_de" type="text" required class="input-field" placeholder="Tiêu đề thông báo" />
@@ -29,7 +59,7 @@
           </div>
           <button type="submit" :disabled="sending" class="btn-primary w-full flex items-center justify-center gap-2">
             <span v-if="sending" class="w-4 h-4 border-2 border-gray-300 border-t-white rounded-full animate-spin" />
-            {{ sending ? 'Đang gửi...' : '📤 Gửi thông báo' }}
+            {{ sending ? 'Đang gửi...' : (broadcastMode ? '📢 Gửi đến tất cả' : '📤 Gửi thông báo') }}
           </button>
         </form>
       </div>
@@ -85,6 +115,7 @@ const notifications = ref([])
 const users  = ref([])
 const loading = ref(false)
 const sending = ref(false)
+const broadcastMode = ref(true) // default: broadcast to all
 
 const form = reactive({ id_nguoi_dung: '', tieu_de: '', noi_dung: '' })
 
@@ -109,15 +140,32 @@ async function loadUsers() {
 }
 
 async function sendNotification() {
+  if (!broadcastMode.value && !form.id_nguoi_dung) {
+    toast.warning('Vui lòng chọn người nhận')
+    return
+  }
   sending.value = true
   try {
-    const res = await adminApi.sendNotification(form)
-    notifications.value.unshift(res.data.data ?? res.data)
+    const payload = {
+      tieu_de: form.tieu_de,
+      noi_dung: form.noi_dung,
+      id_nguoi_dung: broadcastMode.value ? 'all' : form.id_nguoi_dung,
+    }
+    const res = await adminApi.sendNotification(payload)
+    const d = res.data
+    if (broadcastMode.value) {
+      toast.success(`📢 Đã gửi đến ${d.count ?? 'tất cả'} người dùng!`)
+    } else {
+      notifications.value.unshift(d.data ?? d)
+      toast.success('📤 Đã gửi thông báo thành công!')
+    }
     Object.assign(form, { id_nguoi_dung: '', tieu_de: '', noi_dung: '' })
-    toast.success('📤 Đã gửi thông báo thành công!')
+    // Reload list
+    loadNotifications()
   } catch (e) { toast.error(e.response?.data?.message || 'Gửi thất bại') }
   finally { sending.value = false }
 }
 
 onMounted(() => { loadNotifications(); loadUsers() })
 </script>
+
