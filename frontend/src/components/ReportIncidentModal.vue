@@ -98,29 +98,41 @@
         </div>
       </div>
 
-      <!-- Image Upload -->
+      <!-- ── Multiple Image Upload (max 5) ───────────────────────────────────── -->
       <div>
-        <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Hình ảnh</label>
-        <input type="file" ref="fileInput" accept="image/*" @change="onFileChange" class="hidden" />
-        <div v-if="!imagePreview"
+        <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+          Hình ảnh
+          <span class="text-gray-400 font-normal text-xs">(tối đa 5 ảnh)</span>
+        </label>
+
+        <!-- Drop zone (shown when < 5 images) -->
+        <input type="file" ref="fileInput" accept="image/*" multiple @change="onFileChange" class="hidden" />
+        <div v-if="imagePreviews.length < 5"
              @click="fileInput.click()"
-             class="border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-xl p-5 text-center cursor-pointer hover:border-primary-300 transition-colors">
+             class="border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-xl p-4 text-center cursor-pointer hover:border-primary-300 transition-colors">
           <p class="text-2xl mb-1">📷</p>
-          <p class="text-sm text-gray-500">Click để chọn ảnh</p>
-          <p class="text-xs text-gray-400">JPG, PNG, WebP — tối đa 5MB</p>
+          <p class="text-sm text-gray-500">Click để thêm ảnh ({{ imagePreviews.length }}/5)</p>
+          <p class="text-xs text-gray-400">JPG, PNG, WebP — mỗi ảnh tối đa 10MB</p>
         </div>
-        <div v-else class="relative rounded-xl overflow-hidden">
-          <img :src="imagePreview" class="w-full max-h-44 object-cover rounded-xl" />
-          <!-- AI Analyzing overlay -->
-          <div v-if="aiAnalyzing"
-               class="absolute inset-0 bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center gap-2 rounded-xl">
-            <span class="w-8 h-8 border-3 border-white/40 border-t-white rounded-full animate-spin"></span>
-            <span class="text-white text-sm font-medium">AI đang đọc ảnh...</span>
+
+        <!-- Preview grid -->
+        <div v-if="imagePreviews.length" class="mt-2 grid grid-cols-3 gap-2">
+          <div v-for="(prev, idx) in imagePreviews" :key="idx" class="relative rounded-xl overflow-hidden">
+            <img :src="prev" class="w-full h-24 object-cover rounded-xl" />
+            <!-- AI analyzing overlay on first image -->
+            <div v-if="idx === 0 && aiAnalyzing"
+                 class="absolute inset-0 bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center gap-1 rounded-xl">
+              <span class="w-6 h-6 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
+              <span class="text-white text-xs">AI đang đọc...</span>
+            </div>
+            <button type="button" @click="removeImage(idx)" :disabled="aiAnalyzing"
+                    class="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 shadow">✕</button>
+            <!-- Primary badge -->
+            <span v-if="idx === 0" class="absolute bottom-1 left-1 text-xs bg-primary-600 text-white px-1.5 py-0.5 rounded-full">Chính</span>
           </div>
-          <button type="button" @click="clearImage" :disabled="aiAnalyzing"
-                  class="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 shadow">✕</button>
         </div>
       </div>
+
       <!-- AI Warnings -->
       <div v-if="aiWarning" :class="['rounded-xl px-4 py-3 text-sm border', aiWarning.type === 'spam' ? 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300' : 'bg-yellow-50 border-yellow-200 text-yellow-700 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-300']">
         <div class="flex items-start gap-2">
@@ -132,10 +144,16 @@
         </div>
       </div>
 
+      <!-- AI Check status -->
+      <div v-if="aiChecking" class="flex items-center gap-2 text-sm text-primary-600 dark:text-primary-400">
+        <span class="w-4 h-4 border-2 border-primary-300 border-t-primary-600 rounded-full animate-spin inline-block"></span>
+        <span>AI đang kiểm tra trùng lặp và spam...</span>
+      </div>
+
       <!-- Actions -->
       <div class="flex gap-3 pt-1">
         <button type="button" @click="show = false" class="btn-ghost flex-1">Hủy</button>
-        <button type="submit" :disabled="loading" class="btn-emergency flex-1 flex items-center justify-center gap-2">
+        <button type="submit" :disabled="loading || aiChecking" class="btn-emergency flex-1 flex items-center justify-center gap-2">
           <span v-if="loading" class="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
           {{ loading ? 'Đang gửi...' : '🚨 Báo cáo ngay' }}
         </button>
@@ -168,11 +186,12 @@ const gpsError       = ref('')
 const categories     = ref([])
 const levels         = ref([])
 const fileInput      = ref(null)
-const imagePreview   = ref('')
+const imagePreviews  = ref([])   // array of object-URL strings
+const imageFiles     = ref([])   // array of File objects
 const aiAnalyzing    = ref(false)
 const aiDone         = ref(false)
 const aiWarning      = ref(null)
-const imageFile      = ref(null)
+const aiChecking     = ref(false)
 const addressWrap    = ref(null)
 
 // ── Address autocomplete state ──────────────────────────────────
@@ -208,7 +227,6 @@ function onAddressInput() {
 async function fetchSuggestions() {
   suggestionLoading.value = true
   try {
-    // Add 'Việt Nam' suffix if not already included to bias results
     const q = addressQuery.value.trim()
     const searchQ = /vi.t nam|vietnam/i.test(q) ? q : q + ', Việt Nam'
 
@@ -219,7 +237,6 @@ async function fetchSuggestions() {
         format: 'json',
         limit: 7,
         addressdetails: 1,
-        // Soft-bias to Vietnam bounding box (not hard-restrict)
         viewbox: '102.14,8.18,109.46,23.39',
         bounded: 0,
         'accept-language': 'vi,en'
@@ -255,7 +272,6 @@ function moveSuggestion(dir) {
 
 function closeSuggestions() { suggestions.value = [] }
 
-// Close dropdown when clicking outside
 function onDocClick(e) {
   if (addressWrap.value && !addressWrap.value.contains(e.target)) closeSuggestions()
 }
@@ -270,7 +286,6 @@ function getGPS() {
       form.vi_do   = +pos.coords.latitude.toFixed(6)
       form.kinh_do = +pos.coords.longitude.toFixed(6)
       gpsLoading.value = false
-      // Reverse geocode to fill address
       reverseGeocode(form.vi_do, form.kinh_do)
     },
     err => {
@@ -295,16 +310,45 @@ async function reverseGeocode(lat, lng) {
   } catch {}
 }
 
-// ── Image ─────────────────────────────────────────────────────────
+// ── Multiple Image Upload (max 5) ─────────────────────────────────
 function onFileChange(e) {
-  const file = e.target.files[0]
-  if (!file) return
-  if (file.size > 10 * 1024 * 1024) { toast.error('Ảnh quá lớn (tối đa 10MB)'); return }
-  imageFile.value    = file
-  imagePreview.value = URL.createObjectURL(file)
-  aiDone.value       = false
-  // Auto-analyze with AI
-  analyzeImageWithAI(file)
+  const files = Array.from(e.target.files || [])
+  if (!files.length) return
+
+  const remaining = 5 - imageFiles.value.length
+  const toAdd = files.slice(0, remaining)
+
+  for (const file of toAdd) {
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(`Ảnh "${file.name}" quá lớn (tối đa 10MB)`)
+      continue
+    }
+    imageFiles.value.push(file)
+    imagePreviews.value.push(URL.createObjectURL(file))
+  }
+
+  if (imageFiles.value.length > remaining) {
+    toast.warning(`Chỉ thêm được tối đa 5 ảnh. ${files.length - remaining} ảnh đã bỏ qua.`)
+  }
+
+  // AI analyze first image
+  if (imageFiles.value.length === toAdd.length && toAdd.length > 0) {
+    aiDone.value   = false
+    analyzeImageWithAI(imageFiles.value[0])
+  }
+
+  // Reset input so same file can be re-selected
+  if (fileInput.value) fileInput.value.value = ''
+}
+
+function removeImage(idx) {
+  URL.revokeObjectURL(imagePreviews.value[idx])
+  imagePreviews.value.splice(idx, 1)
+  imageFiles.value.splice(idx, 1)
+  if (idx === 0) {
+    aiDone.value   = false
+    aiWarning.value = null
+  }
 }
 
 async function analyzeImageWithAI(file) {
@@ -312,7 +356,6 @@ async function analyzeImageWithAI(file) {
   aiWarning.value   = null
 
   try {
-    // Convert file to base64
     const base64 = await new Promise((resolve, reject) => {
       const reader = new FileReader()
       reader.onload  = () => resolve(reader.result.split(',')[1])
@@ -320,7 +363,6 @@ async function analyzeImageWithAI(file) {
       reader.readAsDataURL(file)
     })
 
-    // Gọi Laravel backend → Laravel gọi Groq API (không cần Python service)
     const resp = await api.post('/analyze-image', {
       image_base64: base64,
       tieu_de:      form.tieu_de?.trim() || 'Sự cố',
@@ -332,7 +374,7 @@ async function analyzeImageWithAI(file) {
     if (!data.success) {
       const errorCode = data.error_code
       if (errorCode === 401) {
-        toast.error('🔑 Groq API Key hết hạn! Cần cập nhật key mới tại console.groq.com/keys → backend/.env → GROQ_API_KEY')
+        toast.error('🔑 Groq API Key hết hạn! Cần cập nhật key mới.')
       } else {
         toast.warning('⚠️ AI phân tích thất bại: ' + (data.error || 'Lỗi không xác định'))
       }
@@ -341,20 +383,17 @@ async function analyzeImageWithAI(file) {
 
     let anyFill = false
 
-    // 1. Điền Nội dung từ Groq Vision
     if (data.image_description && data.image_description.trim()) {
       form.noi_dung = data.image_description.trim()
       aiDone.value  = true
       anyFill = true
     }
 
-    // 2. Chọn Loại sự cố (Number() để tránh type mismatch với <select>)
     if (data.id_loai_su_co && Number(data.id_loai_su_co) > 0) {
       form.id_loai_su_co = Number(data.id_loai_su_co)
       anyFill = true
     }
 
-    // 3. Chọn Mức độ khẩn cấp
     if (data.id_muc_do && Number(data.id_muc_do) > 0) {
       form.id_muc_do = Number(data.id_muc_do)
       anyFill = true
@@ -368,22 +407,72 @@ async function analyzeImageWithAI(file) {
 
   } catch (err) {
     console.warn('[AI] Lỗi phân tích ảnh:', err)
-    if (err.response?.status === 500) {
-      toast.warning('⚠️ Groq API lỗi. Vui lòng điền thủ công.')
-    } else {
-      toast.warning('⚠️ Không thể phân tích ảnh. Vui lòng điền thủ công.')
-    }
+    toast.warning('⚠️ Không thể phân tích ảnh. Vui lòng điền thủ công.')
   } finally {
     aiAnalyzing.value = false
   }
 }
 
-function clearImage() {
-  imageFile.value    = null
-  imagePreview.value = ''
-  aiDone.value       = false
-  aiWarning.value    = null
-  if (fileInput.value) fileInput.value.value = ''
+// ── AI Local Duplicate / Spam Detection ──────────────────────────
+/**
+ * Calls the Python AI service /predict-json to detect duplicate & spam
+ * BEFORE submitting. Shows toast warnings but allows user to override.
+ * Returns false only if spam is confirmed (block submit).
+ */
+async function checkDuplicateAndSpam() {
+  const aiUrl = 'http://localhost:8001'
+  aiChecking.value = true
+  aiWarning.value  = null
+
+  try {
+    const resp = await fetch(`${aiUrl}/predict-json`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tieu_de:  form.tieu_de,
+        noi_dung: form.noi_dung,
+        vi_do:    form.vi_do   ? Number(form.vi_do)   : null,
+        kinh_do:  form.kinh_do ? Number(form.kinh_do) : null,
+      }),
+      signal: AbortSignal.timeout(6000),
+    })
+
+    if (!resp.ok) return true  // AI service down — allow submit
+
+    const data = await resp.json()
+    console.log('[AI Local Check]', data)
+
+    // ── SPAM detection ────────────────────────────────────────────
+    if (data.is_spam === 1) {
+      aiWarning.value = {
+        type: 'spam',
+        title: '🚫 Cảnh báo SPAM',
+        message: 'Nội dung sự cố có dấu hiệu spam. Vui lòng cung cấp thông tin thực tế và chi tiết hơn.',
+      }
+      toast.error('🚫 Sự cố bị từ chối vì bị phát hiện là spam!')
+      return false  // block submit
+    }
+
+    // ── DUPLICATE detection ───────────────────────────────────────
+    if (data.is_duplicate === 1) {
+      const sim = data.similarity_score ? Math.round(data.similarity_score * 100) : '?'
+      aiWarning.value = {
+        type: 'duplicate',
+        title: '⚠️ Sự cố có thể trùng lặp',
+        message: `Phát hiện sự cố tương tự đã được báo cáo (độ tương đồng: ${sim}%). Bạn có thể tiếp tục gửi nếu đây là sự cố mới.`,
+      }
+      toast.warning(`⚠️ Sự cố này có thể trùng với sự cố đã có (${sim}% giống nhau). Kiểm tra lại trước khi gửi.`)
+      // Do NOT block — just warn; user can still submit
+    }
+
+    return true
+
+  } catch (err) {
+    console.warn('[AI Local] Service unavailable:', err.message)
+    return true  // AI down — allow submit
+  } finally {
+    aiChecking.value = false
+  }
 }
 
 // ── Dropdowns ────────────────────────────────────────────────────
@@ -397,6 +486,10 @@ async function loadDropdowns() {
 
 // ── Submit ───────────────────────────────────────────────────────
 async function submit() {
+  // Step 1: AI check (duplicate + spam)
+  const canSubmit = await checkDuplicateAndSpam()
+  if (!canSubmit) return
+
   loading.value = true
   try {
     const fd = new FormData()
@@ -407,13 +500,20 @@ async function submit() {
     fd.append('id_muc_do',     form.id_muc_do)
     if (form.vi_do)   fd.append('vi_do',   form.vi_do)
     if (form.kinh_do) fd.append('kinh_do', form.kinh_do)
-    if (imageFile.value) fd.append('hinh_anh', imageFile.value)
+
+    // Append all images
+    imageFiles.value.forEach((file, idx) => {
+      if (idx === 0) {
+        fd.append('hinh_anh', file)           // primary (backward compat)
+      }
+      fd.append('hinh_anhs[]', file)          // full array (new field)
+    })
 
     await api.post('/su-co', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
     toast.success('✅ Sự cố đã được báo cáo thành công!')
     Object.assign(form, defaultForm())
     addressQuery.value = ''
-    clearImage()
+    clearAllImages()
     show.value = false
     emit('created')
   } catch (err) {
@@ -423,6 +523,15 @@ async function submit() {
   } finally {
     loading.value = false
   }
+}
+
+function clearAllImages() {
+  imagePreviews.value.forEach(url => URL.revokeObjectURL(url))
+  imagePreviews.value = []
+  imageFiles.value    = []
+  aiDone.value        = false
+  aiWarning.value     = null
+  if (fileInput.value) fileInput.value.value = ''
 }
 
 // ── Reset on open ─────────────────────────────────────────────────
@@ -441,5 +550,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocClick)
   clearTimeout(debounceTimer)
+  clearAllImages()
 })
 </script>

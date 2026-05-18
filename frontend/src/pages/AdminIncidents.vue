@@ -54,10 +54,14 @@
                   <p class="text-xs text-gray-400 truncate">📍 {{ inc.dia_chi }}</p>
                 </td>
                 <td class="px-4 py-3">
-                  <img v-if="inc.hinh_anh"
-                       :src="inc.hinh_anh"
-                       class="w-12 h-12 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity border border-gray-200 dark:border-gray-600"
-                       @click="openImageViewer(inc.hinh_anh, inc.tieu_de)" />
+                  <div v-if="imageUrls(inc).length" class="flex gap-1">
+                    <img v-for="(url, i) in imageUrls(inc).slice(0, 3)" :key="i"
+                         :src="url"
+                         class="w-10 h-10 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity border border-gray-200 dark:border-gray-600"
+                         :title="`Ảnh ${i+1}`"
+                         @click="openImageViewer(url, inc.tieu_de)" />
+                    <span v-if="imageUrls(inc).length > 3" class="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs text-gray-500 font-bold">+{{ imageUrls(inc).length - 3 }}</span>
+                  </div>
                   <span v-else class="text-xs text-gray-400">—</span>
                 </td>
                 <td class="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs">{{ inc.nguoi_dung?.ten || '-' }}</td>
@@ -231,7 +235,17 @@ async function deleteIncident() {
   finally { saving.value = false }
 }
 
-// ── Realtime: listen for new incidents ────────────────────────────
+// Helper: get all image URLs
+function imageUrls(inc) {
+  if (!inc) return []
+  const multi = (inc.hinh_anhs_urls || []).filter(Boolean)
+  if (multi.length > 0) return multi
+  if (inc.hinh_anh_url) return [inc.hinh_anh_url]
+  if (inc.hinh_anh) return [inc.hinh_anh]
+  return []
+}
+
+// ── Realtime: listen for new incidents & status changes ───────────
 let echoChannel = null
 
 onMounted(() => {
@@ -245,6 +259,16 @@ onMounted(() => {
       if (!exists) {
         incidents.value.unshift(newInc)
         toast.info(`🆕 Sự cố mới: ${newInc.tieu_de || 'Không rõ'}`, { timeout: 5000 })
+      }
+    }
+  })
+
+  echoChannel.listen('.IncidentStatusChanged', (data) => {
+    const inc = incidents.value.find(i => i.id_su_co === data.id_su_co)
+    if (inc) {
+      inc.trang_thai = data.trang_thai
+      if (data.triggered_by === 'auto') {
+        toast.info(`🔄 Sự cố #${data.id_su_co} tự động giải quyết sau 12 giờ`, { timeout: 5000 })
       }
     }
   })

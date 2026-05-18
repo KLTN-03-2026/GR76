@@ -18,6 +18,7 @@ class SuCo extends Model
         'tieu_de',
         'noi_dung',
         'hinh_anh',
+        'hinh_anhs',
         'dia_chi',
         'vi_do',
         'kinh_do',
@@ -27,7 +28,11 @@ class SuCo extends Model
         'thoi_gian_dang',
     ];
 
-    protected $appends = ['hinh_anh_url'];
+    protected $casts = [
+        'hinh_anhs' => 'array',
+    ];
+
+    protected $appends = ['hinh_anh_url', 'hinh_anhs_urls'];
 
     /**
      * Accessor: return full absolute URL for hinh_anh.
@@ -49,6 +54,23 @@ class SuCo extends Model
             $path = 'storage/' . $path;
         }
         return '/' . $path;
+    }
+
+    /**
+     * Accessor: return array of URLs for hinh_anhs (multiple images).
+     */
+    public function getHinhAnhsUrlsAttribute(): array
+    {
+        $images = $this->hinh_anhs ?? [];
+        return array_map(function ($path) {
+            if (!$path) return null;
+            if (str_starts_with($path, 'http')) return $path;
+            $p = ltrim($path, '/');
+            if (!str_starts_with($p, 'storage/')) {
+                $p = 'storage/' . $p;
+            }
+            return '/' . $p;
+        }, $images);
     }
 
     public function nguoiDung()

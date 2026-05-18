@@ -44,9 +44,14 @@
   <!-- Detail modal -->
   <Modal v-model="showDetail" :title="selected?.tieu_de || ''" size="md">
     <div v-if="selected" class="space-y-4">
-      <!-- Image -->
-      <div v-if="selected.hinh_anh_url" class="cursor-pointer" @click="openImageViewer(selected.hinh_anh_url, selected.tieu_de)">
-        <img :src="selected.hinh_anh_url" class="w-full h-48 object-cover rounded-xl hover:opacity-80 transition-opacity" @error="e => e.target.style.display='none'" />
+      <!-- Images (multiple) -->
+      <div v-if="imageUrls(selected).length" class="grid gap-2" :class="imageUrls(selected).length === 1 ? 'grid-cols-1' : 'grid-cols-2'">
+        <div v-for="(url, i) in imageUrls(selected)" :key="i"
+             class="relative cursor-pointer rounded-xl overflow-hidden"
+             @click="openImageViewer(url, selected.tieu_de)">
+          <img :src="url" class="w-full h-32 object-cover hover:opacity-80 transition-opacity" @error="e => e.target.style.display='none'" />
+          <span v-if="i === 0 && imageUrls(selected).length > 1" class="absolute top-1 left-1 text-xs bg-primary-600 text-white px-1.5 py-0.5 rounded-full">Chính</span>
+        </div>
       </div>
       <div v-else class="w-full h-32 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-400 text-sm">
         📷 Chưa có hình ảnh
@@ -73,7 +78,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import IncidentCard from '@/components/IncidentCard.vue'
 import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 import Modal from '@/components/ui/Modal.vue'
@@ -117,6 +122,15 @@ function statusClass(i) { return smCls[i.trang_thai] || 'badge-pending' }
 function statusLabelFn(i) { return STATUS_LABELS[i.trang_thai] || i.trang_thai }
 function formatDate(ts) { return ts ? new Date(ts).toLocaleString('vi-VN') : '' }
 
+// Helper: get all image URLs from incident (supports both old single & new multi)
+function imageUrls(inc) {
+  if (!inc) return []
+  const multi = (inc.hinh_anhs_urls || []).filter(Boolean)
+  if (multi.length > 0) return multi
+  if (inc.hinh_anh_url) return [inc.hinh_anh_url]
+  return []
+}
+
 async function load() {
   loading.value = true
   try {
@@ -126,5 +140,20 @@ async function load() {
   finally { loading.value = false }
 }
 
-onMounted(load)
+// Real-time auto-resolve
+function onAutoResolved(e) {
+  const { id_su_co, trang_thai } = e.detail
+  const inc = incidents.value.find(i => i.id_su_co === id_su_co)
+  if (inc) inc.trang_thai = trang_thai
+  if (selected.value?.id_su_co === id_su_co) selected.value.trang_thai = trang_thai
+}
+
+onMounted(() => {
+  load()
+  window.addEventListener('incident-auto-resolved', onAutoResolved)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('incident-auto-resolved', onAutoResolved)
+})
 </script>

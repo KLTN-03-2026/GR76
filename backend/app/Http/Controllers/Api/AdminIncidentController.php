@@ -8,6 +8,7 @@ use App\Services\SuCoService;
 use App\Http\Requests\StoreSuCoRequest;
 use App\Http\Requests\UpdateSuCoRequest;
 use App\Http\Requests\UpdateIncidentStatusRequest;
+use App\Events\IncidentStatusChanged;
 use Illuminate\Http\Request;
 
 class AdminIncidentController extends Controller
@@ -69,6 +70,12 @@ class AdminIncidentController extends Controller
         $suCo = SuCo::findOrFail($id);
         $adminId = $request->user()->id_admin;
         $this->suCoService->updateStatus($suCo, $request->trang_thai, $adminId);
+
+        // Broadcast real-time status change
+        try {
+            event(new IncidentStatusChanged($suCo->id_su_co, $request->trang_thai, 'admin'));
+        } catch (\Throwable $e) {}
+
         return response()->json(['message' => 'Cập nhật trạng thái thành công', 'data' => $suCo]);
     }
 }

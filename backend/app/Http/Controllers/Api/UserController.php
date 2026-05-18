@@ -45,10 +45,25 @@ class UserController extends Controller
     {
         $data = $request->validated();
 
-        // Handle image upload
+        // Handle primary image upload
         if ($request->hasFile('hinh_anh')) {
             $path = $request->file('hinh_anh')->store('su_co_images', 'public');
             $data['hinh_anh'] = '/storage/' . $path;
+        }
+
+        // Handle multiple images upload (max 5)
+        if ($request->hasFile('hinh_anhs')) {
+            $paths = [];
+            foreach ($request->file('hinh_anhs') as $file) {
+                if (count($paths) >= 5) break;
+                $p = $file->store('su_co_images', 'public');
+                $paths[] = '/storage/' . $p;
+            }
+            $data['hinh_anhs'] = $paths;
+            // Set primary image from first if not already set
+            if (empty($data['hinh_anh']) && count($paths) > 0) {
+                $data['hinh_anh'] = $paths[0];
+            }
         }
 
         $incident = $this->suCoService->createIncident($data, $request->user()->id_nguoi_dung);

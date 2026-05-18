@@ -16,11 +16,13 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useToast } from 'vue-toastification'
 import Navbar from '@/components/Navbar.vue'
 import Sidebar from '@/components/Sidebar.vue'
 
 const auth = useAuthStore()
 const $route = useRoute()
+const toast = useToast()
 const isLoggedIn = computed(() => auth.isLoggedIn)
 const isAdmin = computed(() => auth.isAdmin)
 
@@ -37,7 +39,30 @@ function toggleDark() {
 }
 
 watch(darkMode, applyDark)
-onMounted(() => applyDark(darkMode.value))
+
+onMounted(() => {
+  applyDark(darkMode.value)
+
+  // ── Real-time: Auto-resolve after 12h ──────────────────────────
+  // Listen on public channel 'incidents' for IncidentStatusChanged
+  try {
+    import('@/services/echo').then(({ default: echo }) => {
+      echo.channel('incidents')
+        .listen('.IncidentStatusChanged', (e) => {
+          console.log('[WS] IncidentStatusChanged', e)
+          if (e.triggered_by === 'auto' && e.trang_thai === 'resolved') {
+            toast.info(`✅ Sự cố #${e.id_su_co} đã được tự động đánh dấu là Đã giải quyết sau 12 giờ`, {
+              timeout: 6000,
+            })
+            // Dispatch a custom DOM event so pages can refresh their list
+            window.dispatchEvent(new CustomEvent('incident-auto-resolved', { detail: e }))
+          }
+        })
+    })
+  } catch (err) {
+    console.warn('[WS] Echo not available:', err)
+  }
+})
 </script>
 
 <style>
