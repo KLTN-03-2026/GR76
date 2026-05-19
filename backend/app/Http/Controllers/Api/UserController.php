@@ -27,7 +27,14 @@ class UserController extends Controller
     public function updateProfile(Request $request)
     {
         $user = $request->user();
-        $user->update($request->only('ten', 'so_dien_thoai'));
+        $data = $request->only('ten', 'so_dien_thoai', 'ho_ten');
+        
+        if ($request->hasFile('avatar')) {
+            $path = $request->file('avatar')->store('avatars', 'public');
+            $data['avatar'] = '/storage/' . $path;
+        }
+
+        $user->update($data);
         return response()->json(['message' => 'Cập nhật thành công', 'data' => $user]);
     }
 
@@ -96,9 +103,6 @@ class UserController extends Controller
             ->where('id_nguoi_dung', $request->user()->id_nguoi_dung)
             ->firstOrFail();
 
-        if ($suCo->trang_thai !== 'pending') {
-            return response()->json(['message' => 'Không thể chỉnh sửa sự cố đang được xử lý'], 403);
-        }
 
         $data = $request->validate([
             'tieu_de'       => 'sometimes|string|min:5|max:200',
@@ -108,8 +112,25 @@ class UserController extends Controller
             'kinh_do'       => 'sometimes|numeric',
             'id_loai_su_co' => 'sometimes|exists:loai_su_cos,id_loai_su_co',
             'id_muc_do'     => 'sometimes|exists:muc_do_khan_caps,id_muc_do',
-            'hinh_anh'      => 'nullable|string',
         ]);
+
+        if ($request->hasFile('hinh_anh')) {
+            $path = $request->file('hinh_anh')->store('su_co_images', 'public');
+            $data['hinh_anh'] = '/storage/' . $path;
+        }
+
+        if ($request->hasFile('hinh_anhs')) {
+            $paths = [];
+            foreach ($request->file('hinh_anhs') as $file) {
+                if (count($paths) >= 5) break;
+                $p = $file->store('su_co_images', 'public');
+                $paths[] = '/storage/' . $p;
+            }
+            $data['hinh_anhs'] = $paths;
+            if (empty($data['hinh_anh']) && empty($suCo->hinh_anh) && count($paths) > 0) {
+                $data['hinh_anh'] = $paths[0];
+            }
+        }
 
         $suCo->update($data);
 

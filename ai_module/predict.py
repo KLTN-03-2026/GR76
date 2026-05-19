@@ -202,6 +202,7 @@ def predict_multimodal(tieu_de: str, noi_dung: str, pil_image) -> dict:
 # DUPLICATE DETECTION (Enhanced with GPS)
 # ─────────────────────────────────────────────
 import math
+import difflib
 
 def _haversine_km(lat1, lon1, lat2, lon2) -> float:
     """Calculate distance between two GPS points in kilometers."""
@@ -222,6 +223,7 @@ def check_duplicate(
     threshold: float = 0.75,
     lat: float = None,
     lng: float = None,
+    dia_chi: str = None,
 ) -> dict:
     """
     Enhanced duplicate detection: TF-IDF text similarity + GPS distance.
@@ -244,7 +246,11 @@ def check_duplicate(
     # Compute combined scores (text + geo proximity)
     scores = []
     for idx, inc in enumerate(existing_incidents):
-        text_sim = float(sims[idx])
+        text_sim_tfidf = float(sims[idx])
+        # Fallback string similarity for OOV words and exact phrasing
+        text_sim_seq = difflib.SequenceMatcher(None, new_text, all_texts[idx]).ratio()
+        text_sim = max(text_sim_tfidf, text_sim_seq)
+
         geo_score = 0.0
         distance_m = None
 
@@ -261,11 +267,32 @@ def check_duplicate(
                 except (ValueError, TypeError):
                     pass
 
+        # Address-based scoring with robust matching
+        address_match = False
+        addr_sim = 0.0
+        if dia_chi and inc.get("dia_chi"):
+            addr1 = dia_chi.lower().strip()
+            addr2 = str(inc.get("dia_chi")).lower().strip()
+            
+            addr_sim = difflib.SequenceMatcher(None, addr1, addr2).ratio()
+            
+            # Match if strings are very similar OR one contains another
+            if addr_sim > 0.85 or (len(addr1) > 10 and addr1 in addr2) or (len(addr2) > 10 and addr2 in addr1):
+                address_match = True
+
         # Combined score
         if distance_m is not None:
             combined = 0.7 * text_sim + 0.3 * geo_score
         else:
             combined = text_sim
+            
+        # Boost score if address is similar and text is somewhat related
+        if address_match:
+            if distance_m is None:
+                distance_m = 0.0
+            # Since address matches closely, lower the text_sim requirement
+            if text_sim > 0.2:
+                combined = max(combined, threshold + 0.1)
 
         scores.append({
             "idx": idx,

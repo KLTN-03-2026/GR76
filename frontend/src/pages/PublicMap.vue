@@ -5,8 +5,8 @@
       <div class="max-w-5xl mx-auto flex items-center justify-between">
         <div>
           <div class="flex items-center gap-3 mb-2">
-            <div class="w-10 h-10 bg-white/30 rounded-xl flex items-center justify-center">
-              <ShieldExclamationIcon class="w-6 h-6 text-gray-800" />
+            <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center overflow-hidden shadow-sm">
+              <img src="https://copilot.microsoft.com/th/id/BCO.19b7de78-f747-4582-9c82-d0d48170234f.png" alt="SOS Logo" class="w-full h-full object-contain" />
             </div>
             <h1 class="text-2xl font-bold">SOS System</h1>
           </div>
@@ -22,9 +22,9 @@
     <!-- Stats strip -->
     <div class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-6 py-3">
       <div class="max-w-5xl mx-auto flex gap-6 text-sm">
-        <span class="text-gray-500">📋 Tổng sự cố: <strong class="text-gray-800 dark:text-gray-100">{{ incidents.length }}</strong></span>
-        <span class="text-gray-500">⏳ Chờ xử lý: <strong class="text-yellow-600">{{ pending }}</strong></span>
-        <span class="text-gray-500">✅ Đã giải quyết: <strong class="text-green-600">{{ resolved }}</strong></span>
+        <span class="text-gray-500 flex items-center gap-1.5"><DocumentTextIcon class="w-4 h-4" /> Tổng sự cố: <strong class="text-gray-800 dark:text-gray-100">{{ incidents.length }}</strong></span>
+        <span class="text-gray-500 flex items-center gap-1.5"><ClockIcon class="w-4 h-4 text-yellow-600" /> Chờ xử lý: <strong class="text-yellow-600">{{ pending }}</strong></span>
+        <span class="text-gray-500 flex items-center gap-1.5"><CheckCircleIcon class="w-4 h-4 text-green-600" /> Đã giải quyết: <strong class="text-green-600">{{ resolved }}</strong></span>
       </div>
     </div>
 
@@ -48,6 +48,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { DocumentTextIcon, ClockIcon, CheckCircleIcon } from '@heroicons/vue/24/outline'
 import { ShieldExclamationIcon } from '@heroicons/vue/24/outline'
 import MapComponent from '@/components/MapComponent.vue'
 import { incidentApi } from '@/services/api'

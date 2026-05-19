@@ -23,7 +23,10 @@ class NguoiDung extends Authenticatable
         'trang_thai',
         'ngay_tao',
         'email_verified_at',
+        'avatar',
     ];
+
+    protected $appends = ['avatar_url'];
 
     protected $hidden = [
         'mat_khau',
@@ -42,5 +45,12 @@ class NguoiDung extends Authenticatable
     public function thongBaos()
     {
         return $this->hasMany(ThongBao::class, 'id_nguoi_dung', 'id_nguoi_dung');
+    }
+
+    public function getAvatarUrlAttribute()
+    {
+        if (!$this->avatar) return null;
+        if (str_starts_with($this->avatar, 'http')) return $this->avatar;
+        return asset('storage/' . ltrim($this->avatar, '/'));
     }
 }

@@ -13,8 +13,8 @@ class PublicController extends Controller
         $incidents = SuCo::with(['loaiSuCo', 'mucDoKhanCap'])
             ->whereNotNull('vi_do')
             ->whereNotNull('kinh_do')
-            ->where('trang_thai', 'Đã xác thực')
-            ->select('id_su_co', 'tieu_de', 'dia_chi', 'vi_do', 'kinh_do', 'trang_thai', 'id_loai_su_co', 'id_muc_do', 'thoi_gian_dang')
+            ->whereIn('trang_thai', ['pending', 'in_progress', 'resolved'])
+            ->select('id_su_co', 'tieu_de', 'dia_chi', 'vi_do', 'kinh_do', 'trang_thai', 'id_loai_su_co', 'id_muc_do', 'thoi_gian_dang', 'hinh_anh', 'hinh_anhs')
             ->orderBy('thoi_gian_dang', 'desc')
             ->get();
 
@@ -24,7 +24,7 @@ class PublicController extends Controller
     public function search(Request $request)
     {
         $query = SuCo::with(['loaiSuCo', 'mucDoKhanCap'])
-            ->where('trang_thai', 'Đã xác thực');
+            ->whereIn('trang_thai', ['pending', 'in_progress', 'resolved']);
 
         if ($request->filled('q')) {
             $q = $request->q;
@@ -55,7 +55,7 @@ class PublicController extends Controller
     {
         $suCo = SuCo::with(['loaiSuCo', 'mucDoKhanCap', 'nguoiDung'])
             ->where('id_su_co', $id)
-            ->where('trang_thai', 'Đã xác thực')
+            ->whereIn('trang_thai', ['pending', 'in_progress', 'resolved'])
             ->firstOrFail();
 
         return response()->json(['success' => true, 'data' => $suCo]);

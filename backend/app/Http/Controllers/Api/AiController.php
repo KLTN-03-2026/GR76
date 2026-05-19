@@ -35,4 +35,18 @@ class AiController extends Controller
             'data' => $result
         ]);
     }
+
+    public function checkSpamAndDuplicatePre(Request $request)
+    {
+        $data = $request->validate([
+            'tieu_de' => 'required|string',
+            'noi_dung' => 'nullable|string',
+            'dia_chi' => 'nullable|string',
+            'vi_do' => 'nullable|numeric',
+            'kinh_do' => 'nullable|numeric',
+        ]);
+
+        $result = $this->aiService->checkSpamAndDuplicatePre($data);
+        return response()->json($result);
+    }
 }

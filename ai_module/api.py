@@ -75,6 +75,7 @@ class IncidentRef(BaseModel):
     noi_dung: str = ""
     vi_do:    Optional[float] = None
     kinh_do:  Optional[float] = None
+    dia_chi:  Optional[str] = None
 
 class DuplicateRequest(BaseModel):
     id_su_co:  int
@@ -82,6 +83,7 @@ class DuplicateRequest(BaseModel):
     noi_dung:  str = ""
     vi_do:     Optional[float] = None
     kinh_do:   Optional[float] = None
+    dia_chi:   Optional[str] = None
     existing:  list[IncidentRef] = []
     threshold: float = Field(default=0.75, ge=0.0, le=1.0)
 
@@ -418,7 +420,7 @@ def check_duplicate(req: DuplicateRequest):
     existing = [i.model_dump() for i in req.existing]
     result   = predict.check_duplicate(
         req.tieu_de, req.noi_dung, existing, req.threshold,
-        lat=req.vi_do, lng=req.kinh_do,
+        lat=req.vi_do, lng=req.kinh_do, dia_chi=req.dia_chi,
     )
     return {"success": True, "id_su_co": req.id_su_co, **result, "checked_at": datetime.now().isoformat()}
 

@@ -3,7 +3,10 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">📊 Dashboard</h1>
+        <div class="flex items-center gap-2">
+          <ChartPieIcon class="w-7 h-7 text-gray-800 dark:text-gray-100" />
+          <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Dashboard</h1>
+        </div>
         <p class="text-sm text-gray-500 mt-0.5">Tổng quan hệ thống SOS</p>
       </div>
       <button @click="load" class="btn-outline text-sm flex items-center gap-2">
@@ -18,7 +21,9 @@
     <div v-else class="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <div v-for="card in statCards" :key="card.label" class="stat-card">
         <div class="flex items-center justify-between">
-          <span class="text-3xl">{{ card.icon }}</span>
+          <div class="mb-3 text-gray-600 dark:text-gray-300">
+            <component :is="card.icon" class="w-8 h-8" />
+          </div>
           <span :class="['text-xs font-bold px-2 py-0.5 rounded-full', card.color]">{{ card.change }}</span>
         </div>
         <div class="text-3xl font-extrabold text-gray-800 dark:text-gray-100">{{ card.value }}</div>
@@ -30,7 +35,10 @@
     <div class="grid lg:grid-cols-3 gap-6">
       <!-- Bar chart -->
       <div class="glass-card p-5 lg:col-span-2">
-        <h2 class="font-semibold text-gray-700 dark:text-gray-200 mb-4">📈 Sự cố theo trạng thái</h2>
+        <div class="flex items-center gap-2 mb-4">
+          <ChartBarIcon class="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          <h2 class="font-semibold text-gray-700 dark:text-gray-200">Sự cố theo trạng thái</h2>
+        </div>
         <div class="h-56">
           <Bar v-if="barData" :data="barData" :options="barOptions" />
           <div v-else class="skeleton h-full rounded-xl" />
@@ -39,7 +47,10 @@
 
       <!-- Pie chart -->
       <div class="glass-card p-5">
-        <h2 class="font-semibold text-gray-700 dark:text-gray-200 mb-4">🍩 Theo danh mục</h2>
+        <div class="flex items-center gap-2 mb-4">
+          <AdjustmentsHorizontalIcon class="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          <h2 class="font-semibold text-gray-700 dark:text-gray-200">Theo danh mục</h2>
+        </div>
         <div class="h-56 flex items-center justify-center">
           <Doughnut v-if="pieData" :data="pieData" :options="pieOptions" />
           <div v-else class="skeleton w-full h-full rounded-xl" />
@@ -49,8 +60,9 @@
 
     <!-- Latest incidents table -->
     <div class="glass-card overflow-hidden">
-      <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-        <h2 class="font-semibold text-gray-700 dark:text-gray-200">🕐 Sự cố gần đây</h2>
+      <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+        <ClockIcon class="w-5 h-5 text-gray-600 dark:text-gray-400" />
+        <h2 class="font-semibold text-gray-700 dark:text-gray-200">Sự cố gần đây</h2>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
@@ -88,7 +100,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Bar, Doughnut } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement } from 'chart.js'
-import { ArrowPathIcon } from '@heroicons/vue/24/outline'
+import { ArrowPathIcon, ChartPieIcon, ChartBarIcon, AdjustmentsHorizontalIcon, ClockIcon, DocumentTextIcon, WrenchScrewdriverIcon, CheckCircleIcon, InboxArrowDownIcon } from '@heroicons/vue/24/outline'
 import { adminApi } from '@/services/api'
 import echo from '@/services/echo'
 
@@ -108,10 +120,10 @@ const statCards = computed(() => {
   if (!data.value) return []
   const d = data.value
   return [
-    { icon: '📋', label: 'Tổng sự cố',     value: d.tong_su_co   ?? 0, change: 'Tổng',  color: 'bg-blue-100 text-blue-700' },
-    { icon: '⏳', label: 'Chờ xử lý',      value: d.pending      ?? 0, change: 'Mới',   color: 'bg-yellow-100 text-yellow-700' },
-    { icon: '🔧', label: 'Đang xử lý',     value: d.in_progress  ?? 0, change: 'Active', color: 'bg-orange-100 text-orange-600' },
-    { icon: '✅', label: 'Đã giải quyết',  value: d.resolved     ?? 0, change: 'Xong',  color: 'bg-green-100 text-green-700' },
+    { icon: DocumentTextIcon, label: 'Tổng sự cố',     value: d.tong_su_co   ?? 0, change: 'Tổng',  color: 'bg-blue-100 text-blue-700' },
+    { icon: InboxArrowDownIcon, label: 'Chờ xử lý',      value: d.pending      ?? 0, change: 'Mới',   color: 'bg-yellow-100 text-yellow-700' },
+    { icon: WrenchScrewdriverIcon, label: 'Đang xử lý',     value: d.in_progress  ?? 0, change: 'Active', color: 'bg-orange-100 text-orange-600' },
+    { icon: CheckCircleIcon, label: 'Đã giải quyết',  value: d.resolved     ?? 0, change: 'Xong',  color: 'bg-green-100 text-green-700' },
   ]
 })
 

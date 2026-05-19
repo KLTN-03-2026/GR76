@@ -31,6 +31,18 @@ export const useAuthStore = defineStore('auth', () => {
     return payload
   }
 
+  async function loginUnified(credentials) {
+    const res = await authApi.loginUnified(credentials)
+    const payload = res.data.data ?? res.data
+    // Update user object to have role = admin if type is admin
+    if (payload.type === 'admin' && payload.user) {
+       payload.user.role = 'admin'
+       payload.user.vai_tro = 'admin'
+    }
+    setAuth(payload.token, payload.user)
+    return payload
+  }
+
   async function register(data) {
     const res = await authApi.register(data)
     const payload = res.data.data ?? res.data
@@ -54,5 +66,5 @@ export const useAuthStore = defineStore('auth', () => {
     return user.value
   }
 
-  return { token, user, isLoggedIn, isAdmin, login, loginAdmin, register, logout, fetchMe, setAuth }
+  return { token, user, isLoggedIn, isAdmin, login, loginAdmin, loginUnified, register, logout, fetchMe, setAuth }
 })

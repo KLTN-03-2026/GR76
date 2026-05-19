@@ -22,7 +22,7 @@ class AuthService
         $user = NguoiDung::create($data);
         return [
             'user' => $user,
-            'token' => $user->createToken('auth_token')->plainTextToken
+            'token' => null
         ];
     }
 
@@ -32,6 +32,12 @@ class AuthService
         if (!$user || !Hash::check($credentials['mat_khau'], $user->mat_khau)) {
             throw ValidationException::withMessages([
                 'email' => ['Thông tin đăng nhập không chính xác.'],
+            ]);
+        }
+        
+        if (is_null($user->email_verified_at)) {
+            throw ValidationException::withMessages([
+                'email' => ['Tài khoản chưa được xác minh. Vui lòng kiểm tra email để kích hoạt.'],
             ]);
         }
         
@@ -54,5 +60,42 @@ class AuthService
             'user'  => array_merge($admin->toArray(), ['vai_tro' => 'admin']),
             'token' => $admin->createToken('admin_token')->plainTextToken
         ];
+    }
+
+    public function loginUnified(array $credentials)
+    {
+        $identifier = $credentials['identifier'];
+        $password = $credentials['mat_khau'];
+
+        // Try Admin
+        $admin = Admin::where('ten_dang_nhap', $identifier)
+                    ->orWhere('email', $identifier)
+                    ->first();
+        if ($admin && Hash::check($password, $admin->mat_khau)) {
+            return [
+                'user'  => array_merge($admin->toArray(), ['vai_tro' => 'admin']),
+                'token' => $admin->createToken('admin_token')->plainTextToken,
+                'type'  => 'admin'
+            ];
+        }
+
+        // Try User
+        $user = NguoiDung::where('email', $identifier)->first();
+        if ($user && Hash::check($password, $user->mat_khau)) {
+            if (is_null($user->email_verified_at)) {
+                throw ValidationException::withMessages([
+                    'identifier' => ['Tài khoản chưa được xác minh. Vui lòng kiểm tra email để kích hoạt.'],
+                ]);
+            }
+            return [
+                'user' => $user,
+                'token' => $user->createToken('auth_token')->plainTextToken,
+                'type' => 'user'
+            ];
+        }
+
+        throw ValidationException::withMessages([
+            'identifier' => ['Thông tin đăng nhập không chính xác.'],
+        ]);
     }
 }

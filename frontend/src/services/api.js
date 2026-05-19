@@ -32,10 +32,17 @@ export default api
 export const authApi = {
   login:           (data) => api.post('/login', data),
   loginAdmin:      (data) => api.post('/admin/login', data),
+  loginUnified:    (data) => api.post('/login-unified', data),
   register:        (data) => api.post('/register', data),
   logout:          ()     => api.post('/logout'),
   me:              ()     => api.get('/me'),
-  updateProfile:   (d)    => api.put('/me', d),
+  updateProfile:   (d)    => {
+    if (d instanceof FormData) {
+      d.append('_method', 'PUT')
+      return api.post('/me', d, { headers: { 'Content-Type': 'multipart/form-data' } })
+    }
+    return api.put('/me', d)
+  },
   changePassword:  (d)    => api.patch('/me/password', d),
   // Password reset
   forgotPassword:  (d)    => api.post('/forgot-password', d),

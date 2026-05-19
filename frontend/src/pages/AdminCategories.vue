@@ -1,7 +1,10 @@
 <template>
   <div class="p-6 max-w-6xl mx-auto space-y-8">
     <div>
-      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">🗂️ Quản lý Danh mục</h1>
+      <div class="flex items-center gap-2">
+        <FolderOpenIcon class="w-7 h-7 text-gray-800 dark:text-gray-100" />
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Quản lý Danh mục</h1>
+      </div>
       <p class="text-sm text-gray-500 mt-0.5">Quản lý loại sự cố và mức độ khẩn cấp</p>
     </div>
 
@@ -9,7 +12,10 @@
       <!-- Categories -->
       <div class="glass-card overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-          <h2 class="font-semibold text-gray-700 dark:text-gray-200">📁 Loại sự cố</h2>
+          <div class="flex items-center gap-2">
+            <TagIcon class="w-5 h-5 text-gray-700 dark:text-gray-200" />
+            <h2 class="font-semibold text-gray-700 dark:text-gray-200">Loại sự cố</h2>
+          </div>
           <button @click="openAddCat" class="btn-primary text-xs px-3 py-1.5 flex items-center gap-1">
             <PlusIcon class="w-3.5 h-3.5" /> Thêm
           </button>
@@ -36,7 +42,10 @@
       <!-- Levels -->
       <div class="glass-card overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-          <h2 class="font-semibold text-gray-700 dark:text-gray-200">⚡ Mức độ khẩn cấp</h2>
+          <div class="flex items-center gap-2">
+            <FireIcon class="w-5 h-5 text-gray-700 dark:text-gray-200" />
+            <h2 class="font-semibold text-gray-700 dark:text-gray-200">Mức độ khẩn cấp</h2>
+          </div>
           <button @click="openAddLvl" class="btn-primary text-xs px-3 py-1.5 flex items-center gap-1">
             <PlusIcon class="w-3.5 h-3.5" /> Thêm
           </button>
@@ -104,7 +113,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useToast } from 'vue-toastification'
-import { PlusIcon } from '@heroicons/vue/24/outline'
+import { PlusIcon, FolderOpenIcon, TagIcon, FireIcon } from '@heroicons/vue/24/outline'
 import Modal from '@/components/ui/Modal.vue'
 import { adminApi } from '@/services/api'
 

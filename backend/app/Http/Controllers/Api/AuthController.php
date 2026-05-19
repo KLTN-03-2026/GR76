@@ -69,6 +69,25 @@ class AuthController extends Controller
     }
 
     /**
+     * Đăng nhập tự động nhận diện admin/user.
+     * POST /login-unified
+     */
+    public function loginUnified(Request $request)
+    {
+        $request->validate([
+            'identifier' => 'required|string',
+            'mat_khau' => 'required|string',
+        ]);
+
+        $data = $this->authService->loginUnified($request->only('identifier', 'mat_khau'));
+        
+        return response()->json([
+            'message' => 'Đăng nhập thành công',
+            'data'    => $data,
+        ]);
+    }
+
+    /**
      * Đăng nhập admin.
      * POST /admin/login
      */

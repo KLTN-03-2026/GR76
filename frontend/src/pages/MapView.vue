@@ -104,20 +104,30 @@
       <Transition name="slide-right">
         <div v-if="selected"
              class="absolute right-4 top-16 w-80 z-[1000] bg-gray-900/95 backdrop-blur-lg text-white rounded-2xl shadow-2xl border border-gray-700 overflow-hidden">
-          <!-- Image -->
+          <!-- Image / Carousel -->
           <div class="relative">
             <!-- Có ảnh và chưa lỗi -->
-            <div v-if="selected.hinh_anh_url && !imageError"
-                 class="relative cursor-pointer"
-                 @click="openImageViewer(selected.hinh_anh_url, selected.tieu_de)">
-              <img
-                :src="selected.hinh_anh_url"
-                class="w-full h-36 object-cover block"
-                @error="imageError = true"
-              />
-              <div class="absolute inset-0 bg-gradient-to-t from-gray-900/70 to-transparent pointer-events-none" />
-              <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/25">
-                <span class="text-white text-xs bg-black/60 px-3 py-1 rounded-full">🔍 Xem ảnh lớn</span>
+            <div v-if="hasImages(selected)" class="relative group">
+              <!-- Hiển thị ảnh hiện tại -->
+              <div class="relative cursor-pointer" @click="openImageViewer(currentImage(selected), selected.tieu_de)">
+                <img
+                  :src="currentImage(selected)"
+                  class="w-full h-36 object-cover block"
+                  @error="imageError = true"
+                />
+                <div class="absolute inset-0 bg-gradient-to-t from-gray-900/70 to-transparent pointer-events-none" />
+                <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/25">
+                  <span class="text-white text-xs bg-black/60 px-3 py-1 rounded-full">🔍 Xem ảnh lớn</span>
+                </div>
+              </div>
+              
+              <!-- Nút chuyển ảnh nếu có > 1 ảnh -->
+              <div v-if="imageList(selected).length > 1" class="absolute bottom-2 left-0 right-0 flex justify-between px-2 pointer-events-none">
+                 <button @click.stop="prevImage" class="pointer-events-auto bg-black/50 text-white w-6 h-6 rounded-full flex items-center justify-center hover:bg-black">‹</button>
+                 <div class="flex items-center gap-1">
+                   <div v-for="(img, idx) in imageList(selected)" :key="idx" :class="['w-1.5 h-1.5 rounded-full', idx === currentImageIndex ? 'bg-white' : 'bg-white/40']"></div>
+                 </div>
+                 <button @click.stop="nextImage(selected)" class="pointer-events-auto bg-black/50 text-white w-6 h-6 rounded-full flex items-center justify-center hover:bg-black">›</button>
               </div>
             </div>
             <!-- Không có ảnh hoặc ảnh lỗi -->
@@ -201,11 +211,41 @@ const showImageViewer = ref(false)
 const viewerImageSrc  = ref('')
 const viewerImageAlt  = ref('')
 const imageError      = ref(false)  // tracks if selected incident's image failed to load
+const currentImageIndex = ref(0)
 
 function openImageViewer(src, alt = '') {
   viewerImageSrc.value = src
   viewerImageAlt.value = alt
   showImageViewer.value = true
+}
+
+// ── Image Carousel functions ──────────────────────────────────────
+function imageList(inc) {
+  if (inc?.hinh_anhs_urls && inc.hinh_anhs_urls.length > 0) return inc.hinh_anhs_urls;
+  if (inc?.hinh_anh_url) return [inc.hinh_anh_url];
+  return [];
+}
+
+function hasImages(inc) {
+  return imageList(inc).length > 0 && !imageError.value;
+}
+
+function currentImage(inc) {
+  const list = imageList(inc);
+  if (list.length === 0) return '';
+  return list[currentImageIndex.value] || list[0];
+}
+
+function nextImage(inc) {
+  const list = imageList(inc);
+  if (list.length <= 1) return;
+  currentImageIndex.value = (currentImageIndex.value + 1) % list.length;
+}
+
+function prevImage(inc) {
+  const list = imageList(selected.value);
+  if (list.length <= 1) return;
+  currentImageIndex.value = (currentImageIndex.value - 1 + list.length) % list.length;
 }
 
 // ── Status label mapping ─────────────────────────────────────────
@@ -311,6 +351,7 @@ function onMapClick({ lat, lng }) {
 // Called when clicking a Leaflet marker — only set selected, do NOT fly
 function onMarkerClick(inc) {
   imageError.value = false   // reset image error state
+  currentImageIndex.value = 0 // reset image index
   selected.value   = inc
 }
 
@@ -332,6 +373,7 @@ async function acceptIncident(inc) {
 // Called from sidebar list — set selected AND fly to incident on map
 function selectFromSidebar(inc) {
   imageError.value = false   // reset image error state
+  currentImageIndex.value = 0
   selected.value   = inc
   const lat = parseFloat(inc.vi_do)
   const lng = parseFloat(inc.kinh_do)
