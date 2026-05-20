@@ -104,15 +104,30 @@ class AiService
     {
         $existing = SuCo::orderBy('thoi_gian_dang', 'desc')
             ->limit(100)
-            ->get(['id_su_co', 'tieu_de', 'noi_dung', 'dia_chi', 'vi_do', 'kinh_do'])
+            ->get(['id_su_co', 'id_nguoi_dung', 'tieu_de', 'noi_dung', 'dia_chi', 'vi_do', 'kinh_do'])
             ->map(fn ($s) => [
-                'id_su_co' => $s->id_su_co,
-                'tieu_de'  => $s->tieu_de,
-                'noi_dung' => $s->noi_dung ?? '',
-                'dia_chi'  => $s->dia_chi  ?? '',
-                'vi_do'    => $s->vi_do,
-                'kinh_do'  => $s->kinh_do,
+                'id_su_co'      => $s->id_su_co,
+                'id_nguoi_dung' => $s->id_nguoi_dung,
+                'tieu_de'       => $s->tieu_de,
+                'noi_dung'      => $s->noi_dung ?? '',
+                'dia_chi'       => $s->dia_chi  ?? '',
+                'vi_do'         => $s->vi_do,
+                'kinh_do'       => $s->kinh_do,
             ])->toArray();
+
+        // ── LAYER 0: Repeat-location spam check (>5 lần cùng vị trí) ──
+        $repeatResult = $this->phpRepeatLocationSpamCheck($data, $existing);
+        if ($repeatResult['is_repeat_spam']) {
+            return [
+                'is_spam'           => 1,
+                'is_duplicate'      => 0,
+                'repeat_count'      => $repeatResult['count'],
+                'similarity_score'  => 0,
+                'duplicate_with_id' => null,
+                'message'           => $repeatResult['reason'],
+                'source'            => 'repeat_location_spam',
+            ];
+        }
 
         // ── LAYER 1: PHP-native duplicate check ───────────────────────
         $phpResult = $this->phpNativeDuplicateCheck($data, $existing);
@@ -137,8 +152,12 @@ class AiService
             ]);
 
             if ($predictResult['is_spam'] ?? 0) {
-                return ['is_spam' => 1, 'is_duplicate' => 0,
-                        'message' => 'Nội dung sự cố có dấu hiệu spam.', 'source' => 'python_ai'];
+                return [
+                    'is_spam'      => 1,
+                    'is_duplicate' => 0,
+                    'message'      => 'Nội dung sự cố có dấu hiệu spam.',
+                    'source'       => 'python_ai',
+                ];
             }
 
             $dupResult = $this->callJson('/check-duplicate', [
@@ -165,8 +184,88 @@ class AiService
             // Python offline — PHP result already passed, safe to proceed
         }
 
-        return ['is_spam' => 0, 'is_duplicate' => 0, 'similarity_score' => 0,
-                'duplicate_with_id' => null, 'source' => 'php_engine'];
+        return [
+            'is_spam'           => 0,
+            'is_duplicate'      => 0,
+            'similarity_score'  => 0,
+            'duplicate_with_id' => null,
+            'source'            => 'php_engine',
+        ];
+    }
+
+    /**
+     * Repeat-location spam detection.
+     * Nếu cùng vị trí GPS (<300m) + tiêu đề/nội dung tương tự (>70%)
+     * được gửi > 5 lần trong 100 bản ghi gần nhất → đánh dấu spam.
+     *
+     * Đặc biệt: Cùng user gửi lại quá nhiều lần sẽ bị block sớm hơn (>3 lần).
+     */
+    private function phpRepeatLocationSpamCheck(array $data, array $existing): array
+    {
+        $newTitle   = mb_strtolower(trim($data['tieu_de'] ?? ''));
+        $newContent = mb_strtolower(trim($data['noi_dung'] ?? ''));
+        $newLat     = isset($data['vi_do'])   && $data['vi_do']   !== '' ? (float)$data['vi_do']   : null;
+        $newLng     = isset($data['kinh_do']) && $data['kinh_do'] !== '' ? (float)$data['kinh_do'] : null;
+        $userId     = $data['id_nguoi_dung'] ?? null;
+
+        $REPEAT_THRESHOLD_ALL  = 5; // Tổng số lần từ mọi user
+        $REPEAT_THRESHOLD_SAME = 3; // Số lần từ cùng một user
+        $TEXT_SIM_MIN          = 0.60; // Ngưỡng tương đồng văn bản
+        $GPS_MAX_METERS        = 300;  // Bán kính GPS
+
+        $similarCount     = 0;
+        $sameUserCount    = 0;
+
+        foreach ($existing as $inc) {
+            $incTitle   = mb_strtolower(trim($inc['tieu_de'] ?? ''));
+            $incContent = mb_strtolower(trim($inc['noi_dung'] ?? ''));
+            $incLat     = $inc['vi_do']   !== null ? (float)$inc['vi_do']   : null;
+            $incLng     = $inc['kinh_do'] !== null ? (float)$inc['kinh_do'] : null;
+
+            if (empty($incTitle) || empty($newTitle)) continue;
+
+            // Tính text similarity
+            similar_text($newTitle, $incTitle, $titlePct);
+            $titleSim = $titlePct / 100.0;
+            similar_text($newContent, $incContent, $contentPct);
+            $contentSim = $contentPct / 100.0;
+            $textSim = max($titleSim, ($titleSim + $contentSim) / 2.0);
+
+            if ($textSim < $TEXT_SIM_MIN) continue;
+
+            // Kiểm tra GPS nếu có
+            $gpsMatch = true; // Nếu không có GPS → chỉ dựa vào text
+            if ($newLat !== null && $newLng !== null && $incLat !== null && $incLng !== null) {
+                $distM = $this->haversineMeters($newLat, $newLng, $incLat, $incLng);
+                $gpsMatch = $distM <= $GPS_MAX_METERS;
+            }
+
+            if (!$gpsMatch) continue;
+
+            $similarCount++;
+            if ($userId !== null && (string)$inc['id_nguoi_dung'] === (string)$userId) {
+                $sameUserCount++;
+            }
+        }
+
+        // Block nếu vượt ngưỡng
+        if ($sameUserCount >= $REPEAT_THRESHOLD_SAME) {
+            return [
+                'is_repeat_spam' => true,
+                'count'          => $sameUserCount,
+                'reason'         => "Bạn đã gửi {$sameUserCount} báo cáo tương tự tại khu vực này. Vui lòng không gửi lặp lại.",
+            ];
+        }
+
+        if ($similarCount >= $REPEAT_THRESHOLD_ALL) {
+            return [
+                'is_repeat_spam' => true,
+                'count'          => $similarCount,
+                'reason'         => "Khu vực này đã có {$similarCount} báo cáo tương tự. Sự cố đang được xử lý.",
+            ];
+        }
+
+        return ['is_repeat_spam' => false, 'count' => $similarCount, 'reason' => ''];
     }
 
     /**

@@ -17,7 +17,21 @@ class SuCoService
         // Load relations so broadcast data is complete
         $suCo->load(['loaiSuCo', 'mucDoKhanCap', 'nguoiDung']);
 
+        // Create notification for all admin accounts
+        $admins = \App\Models\Admin::all();
+        $reporterName = $suCo->nguoiDung->ho_ten ?? $suCo->nguoiDung->ten ?? 'Người dân';
+        foreach ($admins as $admin) {
+            \App\Models\ThongBao::create([
+                'id_admin'      => $admin->id_admin,
+                'id_su_co'      => $suCo->id_su_co,
+                'tieu_de'       => 'Sự cố mới báo cáo 🚨',
+                'noi_dung'      => "{$reporterName} đã báo cáo sự cố: \"{$suCo->tieu_de}\" tại {$suCo->dia_chi}",
+                'da_doc'        => false,
+            ]);
+        }
+
         event(new NewIncidentCreated($suCo));
+
 
         return $suCo;
     }

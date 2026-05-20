@@ -26,6 +26,9 @@ class SuCo extends Model
         'id_muc_do',
         'trang_thai',
         'thoi_gian_dang',
+        'is_spam',
+        'spam_reason',
+        'repeat_count',
     ];
 
     protected $casts = [
