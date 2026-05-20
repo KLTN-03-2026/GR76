@@ -8,8 +8,8 @@
 
       <!-- ── Logo ── -->
       <div class="text-center mb-7">
-        <div class="w-14 h-14 bg-gradient-to-br from-primary-300 to-emerald-400 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg">
-          <UserPlusIcon class="w-8 h-8 text-white" />
+        <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg overflow-hidden border border-gray-100 dark:border-gray-700 bg-white">
+          <img src="https://copilot.microsoft.com/th/id/BCO.19b7de78-f747-4582-9c82-d0d48170234f.png" alt="SOS Logo" class="w-full h-full object-contain" />
         </div>
         <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Tạo tài khoản</h1>
         <p class="text-gray-500 text-sm mt-1">Đăng ký để sử dụng hệ thống SOS</p>
@@ -155,8 +155,8 @@
         <p class="text-gray-500 dark:text-gray-400 text-sm mb-6">
           Tài khoản của bạn đã được tạo và email đã được xác minh.
         </p>
-        <button @click="goToMap" class="btn-primary w-full flex items-center justify-center gap-2 h-11">
-          Vào ứng dụng →
+        <button @click="goToLogin" class="btn-primary w-full flex items-center justify-center gap-2 h-11">
+          Đăng nhập ngay →
         </button>
       </div>
 
@@ -241,8 +241,7 @@ async function handleRegister() {
     const resData = res.data
     const payload = resData.data ?? resData
 
-    // Lưu token tạm thời
-    auth.setAuth(payload.token, payload.user)
+    // Không lưu token tạm thời ở đây, yêu cầu xác minh email xong mới đăng nhập.
 
     // Nếu SMTP lỗi, backend trả otp_demo
     otpDemo.value = resData.otp_demo || ''
@@ -320,8 +319,8 @@ function startResendCountdown() {
 }
 
 // ── Step 3: Vào app ────────────────────────────────────────────────────
-function goToMap() {
-  router.push('/map')
+function goToLogin() {
+  router.push('/login')
 }
 
 onBeforeUnmount(() => clearInterval(resendTimer))

@@ -3,7 +3,10 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">📋 Sự cố của tôi</h1>
+        <div class="flex items-center gap-2">
+          <ClipboardDocumentListIcon class="w-7 h-7 text-gray-800 dark:text-gray-100" />
+          <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Sự cố của tôi</h1>
+        </div>
         <p class="text-sm text-gray-500 mt-0.5">Danh sách sự cố bạn đã báo cáo</p>
       </div>
       <div class="flex gap-3">
@@ -34,10 +37,14 @@
 
     <!-- Empty -->
     <div v-else class="flex flex-col items-center justify-center py-20 text-center">
-      <div class="w-24 h-24 bg-primary-50 dark:bg-primary-900/20 rounded-full flex items-center justify-center mb-4 text-5xl">📭</div>
+      <div class="w-24 h-24 bg-primary-50 dark:bg-primary-900/20 rounded-full flex items-center justify-center mb-4 text-primary-500">
+        <InboxIcon class="w-12 h-12" />
+      </div>
       <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Chưa có sự cố nào</h3>
       <p class="text-sm text-gray-400 mt-1 mb-5">Hãy báo cáo sự cố đầu tiên của bạn</p>
-      <button @click="showReport = true" class="btn-primary">➕ Báo cáo ngay</button>
+      <button @click="showReport = true" class="btn-primary flex items-center gap-2">
+        <PlusIcon class="w-4 h-4" /> Báo cáo ngay
+      </button>
     </div>
   </div>
 
@@ -53,13 +60,19 @@
           <span v-if="i === 0 && imageUrls(selected).length > 1" class="absolute top-1 left-1 text-xs bg-primary-600 text-white px-1.5 py-0.5 rounded-full">Chính</span>
         </div>
       </div>
-      <div v-else class="w-full h-32 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-400 text-sm">
-        📷 Chưa có hình ảnh
+      <div v-else class="w-full h-32 bg-gray-100 dark:bg-gray-700 rounded-xl flex flex-col items-center justify-center text-gray-400 text-sm">
+        <PhotoIcon class="w-6 h-6 mb-1" />
+        Chưa có hình ảnh
       </div>
-      <div class="flex gap-2 flex-wrap">
-        <span :class="['badge', statusClass(selected)]">{{ statusLabelFn(selected) }}</span>
-        <span v-if="selected.muc_do_khan_cap" class="badge bg-orange-100 text-orange-700">⚡ {{ selected.muc_do_khan_cap?.ten_muc_do }}</span>
-        <span v-if="selected.loai_su_co" class="badge bg-blue-100 text-blue-700">{{ selected.loai_su_co?.ten_loai }}</span>
+      <div class="flex items-center justify-between">
+        <div class="flex gap-2 flex-wrap">
+          <span :class="['badge', statusClass(selected)]">{{ statusLabelFn(selected) }}</span>
+          <span v-if="selected.muc_do_khan_cap" class="badge bg-orange-100 text-orange-700">⚡ {{ selected.muc_do_khan_cap?.ten_muc_do }}</span>
+          <span v-if="selected.loai_su_co" class="badge bg-blue-100 text-blue-700">{{ selected.loai_su_co?.ten_loai }}</span>
+        </div>
+        <button @click="openEditModal(selected)" class="btn-ghost text-xs py-1 px-3 border border-gray-200">
+          ✏️ Chỉnh sửa
+        </button>
       </div>
       <div>
         <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Nội dung</p>
@@ -73,18 +86,18 @@
     </div>
   </Modal>
 
-  <ReportIncidentModal v-model="showReport" @created="load" />
+  <ReportIncidentModal v-model="showReport" :editIncident="incidentToEdit" @created="load" @updated="load" />
   <ImageViewerModal v-model="showImageViewer" :src="viewerImageSrc" :alt="viewerImageAlt" />
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import IncidentCard from '@/components/IncidentCard.vue'
 import SkeletonLoader from '@/components/ui/SkeletonLoader.vue'
 import Modal from '@/components/ui/Modal.vue'
 import ReportIncidentModal from '@/components/ReportIncidentModal.vue'
 import ImageViewerModal from '@/components/ImageViewerModal.vue'
-import { PlusIcon } from '@heroicons/vue/24/outline'
+import { PlusIcon, ClipboardDocumentListIcon, InboxIcon, PhotoIcon } from '@heroicons/vue/24/outline'
 import { incidentApi } from '@/services/api'
 
 const incidents    = ref([])
@@ -93,6 +106,7 @@ const selected     = ref(null)
 const showDetail   = ref(false)
 const showReport   = ref(false)
 const filterStatus = ref('')
+const incidentToEdit = ref(null)
 
 // Image viewer
 const showImageViewer = ref(false)
@@ -136,9 +150,28 @@ async function load() {
   try {
     const res = await incidentApi.myIncidents()
     incidents.value = res.data.data ?? res.data
+    // Update selected incident if it's currently open
+    if (selected.value) {
+      const updated = incidents.value.find(i => i.id_su_co === selected.value.id_su_co)
+      if (updated) selected.value = updated
+    }
   } catch {}
   finally { loading.value = false }
 }
+
+function openEditModal(inc) {
+  incidentToEdit.value = inc
+  showDetail.value = false
+  showReport.value = true
+}
+
+// Ensure incidentToEdit is reset when ReportIncidentModal closes (if we want to create new later)
+watch(showReport, (v) => {
+  if (!v) {
+    // delay reset to not clear form before animation ends
+    setTimeout(() => { incidentToEdit.value = null }, 300)
+  }
+})
 
 // Real-time auto-resolve
 function onAutoResolved(e) {

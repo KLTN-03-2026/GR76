@@ -3,7 +3,10 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">🚨 Quản lý Sự cố</h1>
+        <div class="flex items-center gap-2">
+          <ExclamationCircleIcon class="w-7 h-7 text-gray-800 dark:text-gray-100" />
+          <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Quản lý Sự cố</h1>
+        </div>
         <p class="text-sm text-gray-500 mt-0.5">Xem và xử lý tất cả sự cố trong hệ thống</p>
       </div>
       <button @click="load" class="btn-outline text-sm flex items-center gap-2">
@@ -51,7 +54,10 @@
                 <td class="px-4 py-3 text-gray-400 text-xs">#{{ inc.id_su_co }}</td>
                 <td class="px-4 py-3 font-medium text-gray-800 dark:text-gray-100 max-w-[200px]">
                   <p class="truncate">{{ inc.tieu_de }}</p>
-                  <p class="text-xs text-gray-400 truncate">📍 {{ inc.dia_chi }}</p>
+                  <div class="flex items-center gap-1 text-xs text-gray-400 truncate">
+                    <MapPinIcon class="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>{{ inc.dia_chi }}</span>
+                  </div>
                 </td>
                 <td class="px-4 py-3">
                   <div v-if="imageUrls(inc).length" class="flex gap-1">
@@ -72,8 +78,12 @@
                 <td class="px-4 py-3 text-xs text-gray-400">{{ formatDate(inc.thoi_gian_dang) }}</td>
                 <td class="px-4 py-3">
                   <div class="flex gap-1 flex-wrap">
-                    <button @click="openStatus(inc)" class="btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100">✏️ TT</button>
-                    <button @click="confirmDelete(inc)" class="btn-xs bg-red-50 text-red-600 hover:bg-red-100">🗑️</button>
+                    <button @click="openStatus(inc)" class="btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center gap-1">
+                      <PencilIcon class="w-3.5 h-3.5" /> TT
+                    </button>
+                    <button @click="confirmDelete(inc)" class="btn-xs bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center w-7">
+                      <TrashIcon class="w-4 h-4" />
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -109,7 +119,7 @@
     </Modal>
 
     <!-- Confirm Delete Modal -->
-    <Modal v-model="showDelete" title="⚠️ Xác nhận xóa" size="sm">
+    <Modal v-model="showDelete" title="Xác nhận xóa" size="sm">
       <div class="space-y-4">
         <p class="text-sm text-gray-600 dark:text-gray-300">Bạn có chắc muốn xóa sự cố <strong>{{ selectedInc?.tieu_de }}</strong>? Hành động này không thể hoàn tác.</p>
         <div class="flex gap-3">
@@ -130,7 +140,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useToast } from 'vue-toastification'
-import { ArrowPathIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline'
+import { ArrowPathIcon, ExclamationCircleIcon, MagnifyingGlassIcon, MapPinIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
 import Modal from '@/components/ui/Modal.vue'
 import ImageViewerModal from '@/components/ImageViewerModal.vue'
 import { adminApi } from '@/services/api'
@@ -214,7 +224,7 @@ async function updateStatus() {
     await adminApi.incidentStatus(selectedInc.value.id_su_co, newStatus.value)
     selectedInc.value.trang_thai = newStatus.value
     showStatus.value = false
-    toast.success('✅ Đã cập nhật trạng thái!')
+    toast.success('Đã cập nhật trạng thái!')
   } catch (e) { toast.error(e.response?.data?.message || 'Lỗi cập nhật') }
   finally { saving.value = false }
 }
@@ -230,7 +240,7 @@ async function deleteIncident() {
     await adminApi.incidentDelete(selectedInc.value.id_su_co)
     incidents.value = incidents.value.filter(i => i.id_su_co !== selectedInc.value.id_su_co)
     showDelete.value = false
-    toast.success('🗑️ Đã xóa sự cố!')
+    toast.success('Đã xóa sự cố!')
   } catch (e) { toast.error(e.response?.data?.message || 'Lỗi xóa') }
   finally { saving.value = false }
 }
@@ -258,7 +268,7 @@ onMounted(() => {
       const exists = incidents.value.some(i => i.id_su_co === newInc.id_su_co)
       if (!exists) {
         incidents.value.unshift(newInc)
-        toast.info(`🆕 Sự cố mới: ${newInc.tieu_de || 'Không rõ'}`, { timeout: 5000 })
+        toast.info(`Sự cố mới: ${newInc.tieu_de || 'Không rõ'}`, { timeout: 5000 })
       }
     }
   })
@@ -268,7 +278,7 @@ onMounted(() => {
     if (inc) {
       inc.trang_thai = data.trang_thai
       if (data.triggered_by === 'auto') {
-        toast.info(`🔄 Sự cố #${data.id_su_co} tự động giải quyết sau 12 giờ`, { timeout: 5000 })
+        toast.info(`Sự cố #${data.id_su_co} tự động giải quyết sau 12 giờ`, { timeout: 5000 })
       }
     }
   })

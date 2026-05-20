@@ -3,7 +3,10 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">👥 Quản lý Người dùng</h1>
+        <div class="flex items-center gap-2">
+          <UsersIcon class="w-7 h-7 text-gray-800 dark:text-gray-100" />
+          <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Quản lý Người dùng</h1>
+        </div>
         <p class="text-sm text-gray-500 mt-0.5">Quản lý tài khoản người dùng hệ thống</p>
       </div>
       <button @click="openCreate" class="btn-primary text-sm flex items-center gap-2">
@@ -47,15 +50,15 @@
                 <td class="px-4 py-3 text-gray-500 text-xs">{{ u.so_dien_thoai || '-' }}</td>
                 <td class="px-4 py-3">
                   <span :class="u.trang_thai === 'bi_khoa' ? 'badge bg-red-100 text-red-600' : 'badge bg-green-100 text-green-700'">
-                    {{ u.trang_thai === 'bi_khoa' ? '🔒 Bị khóa' : '✅ Hoạt động' }}
+                    {{ u.trang_thai === 'bi_khoa' ? 'Bị khóa' : 'Hoạt động' }}
                   </span>
                 </td>
                 <td class="px-4 py-3">
                   <div class="flex gap-1 flex-wrap">
-                    <button v-if="u.trang_thai !== 'bi_khoa'" @click="lockUser(u)" class="btn-xs bg-orange-50 text-orange-600 hover:bg-orange-100">🔒 Khóa</button>
-                    <button v-else @click="unlockUser(u)" class="btn-xs bg-green-50 text-green-600 hover:bg-green-100">🔓 Mở</button>
-                    <button @click="openChangePwd(u)" class="btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100">🔑 MK</button>
-                    <button @click="confirmDelete(u)" class="btn-xs bg-red-50 text-red-600 hover:bg-red-100">🗑️</button>
+                    <button v-if="u.trang_thai !== 'bi_khoa'" @click="lockUser(u)" class="btn-xs bg-orange-50 text-orange-600 hover:bg-orange-100 flex items-center gap-1"><LockClosedIcon class="w-3 h-3" /> Khóa</button>
+                    <button v-else @click="unlockUser(u)" class="btn-xs bg-green-50 text-green-600 hover:bg-green-100 flex items-center gap-1"><LockOpenIcon class="w-3 h-3" /> Mở</button>
+                    <button @click="openChangePwd(u)" class="btn-xs bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center gap-1"><KeyIcon class="w-3 h-3" /> MK</button>
+                    <button @click="confirmDelete(u)" class="btn-xs bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center w-7"><TrashIcon class="w-3 h-3" /></button>
                   </div>
                 </td>
               </tr>
@@ -69,7 +72,7 @@
     </div>
 
     <!-- Create User Modal -->
-    <Modal v-model="showCreate" title="➕ Tạo tài khoản mới" size="md">
+    <Modal v-model="showCreate" title="Tạo tài khoản mới" size="md">
       <form @submit.prevent="createUser" class="space-y-4">
         <div class="grid grid-cols-2 gap-4">
           <div class="col-span-2">
@@ -100,7 +103,7 @@
     </Modal>
 
     <!-- Change Password Modal -->
-    <Modal v-model="showPwd" :title="`🔑 Đổi mật khẩu - ${selected?.ten}`" size="sm">
+    <Modal v-model="showPwd" :title="`Đổi mật khẩu - ${selected?.ten}`" size="sm">
       <form @submit.prevent="changePassword" class="space-y-4">
         <div>
           <label class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">Mật khẩu mới *</label>
@@ -117,7 +120,7 @@
     </Modal>
 
     <!-- Confirm Delete Modal -->
-    <Modal v-model="showDelete" title="⚠️ Xác nhận xóa" size="sm">
+    <Modal v-model="showDelete" title="Xác nhận xóa" size="sm">
       <div class="space-y-4">
         <p class="text-sm text-gray-600 dark:text-gray-300">Bạn có chắc muốn xóa tài khoản <strong>{{ selected?.ten }}</strong>? Hành động này không thể hoàn tác.</p>
         <div class="flex gap-3">
@@ -135,7 +138,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useToast } from 'vue-toastification'
-import { MagnifyingGlassIcon, PlusIcon, ArrowPathIcon } from '@heroicons/vue/24/outline'
+import { MagnifyingGlassIcon, PlusIcon, ArrowPathIcon, UsersIcon, LockClosedIcon, LockOpenIcon, KeyIcon, TrashIcon } from '@heroicons/vue/24/outline'
 import Modal from '@/components/ui/Modal.vue'
 import { adminApi } from '@/services/api'
 
@@ -181,7 +184,7 @@ async function createUser() {
     const res = await adminApi.userCreate(createForm)
     users.value.push(res.data.data ?? res.data)
     showCreate.value = false
-    toast.success('✅ Tạo tài khoản thành công!')
+    toast.success('Tạo tài khoản thành công!')
   } catch (e) {
     const errs = e.response?.data?.errors
     if (errs) toast.error(Object.values(errs).flat().join(', '))
@@ -193,7 +196,7 @@ async function lockUser(u) {
   try {
     await adminApi.userLock(u.id_nguoi_dung)
     u.trang_thai = 'bi_khoa'
-    toast.success('🔒 Đã khóa tài khoản!')
+    toast.success('Đã khóa tài khoản!')
   } catch (e) { toast.error(e.response?.data?.message || 'Lỗi') }
 }
 
@@ -201,7 +204,7 @@ async function unlockUser(u) {
   try {
     await adminApi.userUnlock(u.id_nguoi_dung)
     u.trang_thai = 'hoat_dong'
-    toast.success('🔓 Đã mở khóa tài khoản!')
+    toast.success('Đã mở khóa tài khoản!')
   } catch (e) { toast.error(e.response?.data?.message || 'Lỗi') }
 }
 
@@ -216,7 +219,7 @@ async function changePassword() {
   try {
     await adminApi.userChangePassword(selected.value.id_nguoi_dung, pwdForm)
     showPwd.value = false
-    toast.success('🔑 Đã đổi mật khẩu!')
+    toast.success('Đã đổi mật khẩu!')
   } catch (e) { toast.error(e.response?.data?.message || 'Lỗi') }
   finally { saving.value = false }
 }
@@ -232,7 +235,7 @@ async function deleteUser() {
     await adminApi.userDelete(selected.value.id_nguoi_dung)
     users.value = users.value.filter(u => u.id_nguoi_dung !== selected.value.id_nguoi_dung)
     showDelete.value = false
-    toast.success('🗑️ Đã xóa người dùng!')
+    toast.success('Đã xóa người dùng!')
   } catch (e) { toast.error(e.response?.data?.message || 'Lỗi xóa') }
   finally { saving.value = false }
 }

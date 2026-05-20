@@ -3,12 +3,8 @@
        style="background: var(--color-card); border-bottom: 1px solid var(--color-border); backdrop-filter: blur(12px);">
     <!-- Logo -->
     <router-link to="/home" class="flex items-center gap-2.5 select-none">
-      <!-- Shield SVG Logo -->
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" class="w-8 h-8 shrink-0">
-        <path d="M24 4L6 11v13c0 10.5 7.5 18.5 18 21 10.5-2.5 18-10.5 18-21V11L24 4Z" fill="#dc2626"/>
-        <path d="M24 8L9 14v10c0 8.5 6 15 15 17.5 9-2.5 15-9 15-17.5V14L24 8Z" fill="#ef4444" opacity="0.35"/>
-        <text x="24" y="30" font-family="Arial Black,sans-serif" font-weight="900" font-size="13.5" fill="white" text-anchor="middle" letter-spacing="-0.5">SOS</text>
-      </svg>
+      <!-- Image Logo -->
+      <img src="https://copilot.microsoft.com/th/id/BCO.19b7de78-f747-4582-9c82-d0d48170234f.png" alt="SOS Logo" class="w-10 h-10 object-contain rounded-lg shrink-0" />
       <div class="hidden sm:block leading-tight">
         <div class="font-bold text-sm" style="color: var(--color-text); letter-spacing: -0.3px;">SOS System</div>
         <div class="text-[10px]" style="color: var(--color-text-muted);">Hệ thống báo cáo sự cố</div>
@@ -50,7 +46,8 @@
                 style="border: 1px solid var(--color-border);"
                 onmouseover="this.style.background='var(--color-surface-100)'"
                 onmouseout="this.style.background='transparent'">
-          <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold"
+          <img v-if="auth.user?.avatar_url" :src="auth.user.avatar_url" class="w-8 h-8 rounded-full object-cover shadow-sm border border-gray-200 dark:border-gray-700" />
+          <div v-else class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold"
                style="background: var(--color-brand); color: #0d0d0d;">
             {{ userInitials }}
           </div>

@@ -58,17 +58,19 @@ class AiService
         $existing = SuCo::where('id_su_co', '!=', $suCoId)
             ->orderBy('thoi_gian_dang', 'desc')
             ->limit(50)
-            ->get(['id_su_co', 'tieu_de', 'noi_dung'])
+            ->get(['id_su_co', 'tieu_de', 'noi_dung', 'dia_chi'])
             ->map(fn ($s) => [
                 'id_su_co' => $s->id_su_co,
                 'tieu_de'  => $s->tieu_de,
                 'noi_dung' => $s->noi_dung ?? '',
+                'dia_chi'  => $s->dia_chi ?? '',
             ])->toArray();
 
         $result = $this->callJson('/check-duplicate', [
             'id_su_co'  => $suCoId,
             'tieu_de'   => $suCo->tieu_de ?? '',
             'noi_dung'  => $suCo->noi_dung ?? '',
+            'dia_chi'   => $suCo->dia_chi ?? '',
             'existing'  => $existing,
             'threshold' => 0.75,
         ]);
@@ -88,6 +90,297 @@ class AiService
             'ket_qua'        => false,
         ];
     }
+
+    /**
+     * Check duplicate/spam BEFORE saving to DB.
+     *
+     * ARCHITECTURE:
+     *   Layer 1 – PHP-native engine (similar_text + levenshtein + GPS haversine)
+     *             Always runs. Independent of Python AI service.
+     *   Layer 2 – Python AI (spam NLP + TF-IDF duplicate)
+     *             Optional bonus. Falls back gracefully if Python is offline.
+     */
+    public function checkSpamAndDuplicatePre(array $data): array
+    {
+        $existing = SuCo::orderBy('thoi_gian_dang', 'desc')
+            ->limit(100)
+            ->get(['id_su_co', 'id_nguoi_dung', 'tieu_de', 'noi_dung', 'dia_chi', 'vi_do', 'kinh_do'])
+            ->map(fn ($s) => [
+                'id_su_co'      => $s->id_su_co,
+                'id_nguoi_dung' => $s->id_nguoi_dung,
+                'tieu_de'       => $s->tieu_de,
+                'noi_dung'      => $s->noi_dung ?? '',
+                'dia_chi'       => $s->dia_chi  ?? '',
+                'vi_do'         => $s->vi_do,
+                'kinh_do'       => $s->kinh_do,
+            ])->toArray();
+
+        // ── LAYER 0: Repeat-location spam check (>5 lần cùng vị trí) ──
+        $repeatResult = $this->phpRepeatLocationSpamCheck($data, $existing);
+        if ($repeatResult['is_repeat_spam']) {
+            return [
+                'is_spam'           => 1,
+                'is_duplicate'      => 0,
+                'repeat_count'      => $repeatResult['count'],
+                'similarity_score'  => 0,
+                'duplicate_with_id' => null,
+                'message'           => $repeatResult['reason'],
+                'source'            => 'repeat_location_spam',
+            ];
+        }
+
+        // ── LAYER 1: PHP-native duplicate check ───────────────────────
+        $phpResult = $this->phpNativeDuplicateCheck($data, $existing);
+        if ($phpResult['is_duplicate']) {
+            return [
+                'is_spam'           => 0,
+                'is_duplicate'      => 1,
+                'similarity_score'  => $phpResult['score'],
+                'duplicate_with_id' => $phpResult['id_su_co_trung'],
+                'message'           => $phpResult['reason'],
+                'source'            => 'php_engine',
+            ];
+        }
+
+        // ── LAYER 2: Python AI (optional) ─────────────────────────────
+        try {
+            $predictResult = $this->callJson('/predict-json', [
+                'tieu_de'  => $data['tieu_de'],
+                'noi_dung' => $data['noi_dung'] ?? '',
+                'vi_do'    => $data['vi_do']    ?? null,
+                'kinh_do'  => $data['kinh_do']  ?? null,
+            ]);
+
+            if ($predictResult['is_spam'] ?? 0) {
+                return [
+                    'is_spam'      => 1,
+                    'is_duplicate' => 0,
+                    'message'      => 'Nội dung sự cố có dấu hiệu spam.',
+                    'source'       => 'python_ai',
+                ];
+            }
+
+            $dupResult = $this->callJson('/check-duplicate', [
+                'id_su_co'  => 0,
+                'tieu_de'   => $data['tieu_de'],
+                'noi_dung'  => $data['noi_dung'] ?? '',
+                'vi_do'     => $data['vi_do']    ?? null,
+                'kinh_do'   => $data['kinh_do']  ?? null,
+                'dia_chi'   => $data['dia_chi']  ?? null,
+                'existing'  => $existing,
+                'threshold' => 0.65,
+            ]);
+
+            if ($dupResult['la_trung_lap'] ?? false) {
+                return [
+                    'is_spam'           => 0,
+                    'is_duplicate'      => 1,
+                    'similarity_score'  => $dupResult['do_tuong_dong'] ?? 0,
+                    'duplicate_with_id' => $dupResult['id_su_co_trung'] ?? null,
+                    'source'            => 'python_ai',
+                ];
+            }
+        } catch (\Throwable) {
+            // Python offline — PHP result already passed, safe to proceed
+        }
+
+        return [
+            'is_spam'           => 0,
+            'is_duplicate'      => 0,
+            'similarity_score'  => 0,
+            'duplicate_with_id' => null,
+            'source'            => 'php_engine',
+        ];
+    }
+
+    /**
+     * Repeat-location spam detection.
+     * Nếu cùng vị trí GPS (<300m) + tiêu đề/nội dung tương tự (>70%)
+     * được gửi > 5 lần trong 100 bản ghi gần nhất → đánh dấu spam.
+     *
+     * Đặc biệt: Cùng user gửi lại quá nhiều lần sẽ bị block sớm hơn (>3 lần).
+     */
+    private function phpRepeatLocationSpamCheck(array $data, array $existing): array
+    {
+        $newTitle   = mb_strtolower(trim($data['tieu_de'] ?? ''));
+        $newContent = mb_strtolower(trim($data['noi_dung'] ?? ''));
+        $newLat     = isset($data['vi_do'])   && $data['vi_do']   !== '' ? (float)$data['vi_do']   : null;
+        $newLng     = isset($data['kinh_do']) && $data['kinh_do'] !== '' ? (float)$data['kinh_do'] : null;
+        $userId     = $data['id_nguoi_dung'] ?? null;
+
+        $REPEAT_THRESHOLD_ALL  = 5; // Tổng số lần từ mọi user
+        $REPEAT_THRESHOLD_SAME = 3; // Số lần từ cùng một user
+        $TEXT_SIM_MIN          = 0.60; // Ngưỡng tương đồng văn bản
+        $GPS_MAX_METERS        = 300;  // Bán kính GPS
+
+        $similarCount     = 0;
+        $sameUserCount    = 0;
+
+        foreach ($existing as $inc) {
+            $incTitle   = mb_strtolower(trim($inc['tieu_de'] ?? ''));
+            $incContent = mb_strtolower(trim($inc['noi_dung'] ?? ''));
+            $incLat     = $inc['vi_do']   !== null ? (float)$inc['vi_do']   : null;
+            $incLng     = $inc['kinh_do'] !== null ? (float)$inc['kinh_do'] : null;
+
+            if (empty($incTitle) || empty($newTitle)) continue;
+
+            // Tính text similarity
+            similar_text($newTitle, $incTitle, $titlePct);
+            $titleSim = $titlePct / 100.0;
+            similar_text($newContent, $incContent, $contentPct);
+            $contentSim = $contentPct / 100.0;
+            $textSim = max($titleSim, ($titleSim + $contentSim) / 2.0);
+
+            if ($textSim < $TEXT_SIM_MIN) continue;
+
+            // Kiểm tra GPS nếu có
+            $gpsMatch = true; // Nếu không có GPS → chỉ dựa vào text
+            if ($newLat !== null && $newLng !== null && $incLat !== null && $incLng !== null) {
+                $distM = $this->haversineMeters($newLat, $newLng, $incLat, $incLng);
+                $gpsMatch = $distM <= $GPS_MAX_METERS;
+            }
+
+            if (!$gpsMatch) continue;
+
+            $similarCount++;
+            if ($userId !== null && (string)$inc['id_nguoi_dung'] === (string)$userId) {
+                $sameUserCount++;
+            }
+        }
+
+        // Block nếu vượt ngưỡng
+        if ($sameUserCount >= $REPEAT_THRESHOLD_SAME) {
+            return [
+                'is_repeat_spam' => true,
+                'count'          => $sameUserCount,
+                'reason'         => "Bạn đã gửi {$sameUserCount} báo cáo tương tự tại khu vực này. Vui lòng không gửi lặp lại.",
+            ];
+        }
+
+        if ($similarCount >= $REPEAT_THRESHOLD_ALL) {
+            return [
+                'is_repeat_spam' => true,
+                'count'          => $similarCount,
+                'reason'         => "Khu vực này đã có {$similarCount} báo cáo tương tự. Sự cố đang được xử lý.",
+            ];
+        }
+
+        return ['is_repeat_spam' => false, 'count' => $similarCount, 'reason' => ''];
+    }
+
+    /**
+     * PHP-native duplicate detection engine.
+     * Uses similar_text(), levenshtein(), GPS haversine — no Python needed.
+     *
+     * TRIGGERS a duplicate if ANY of these conditions is true:
+     *   R1: Title similarity >= 88%  (very close title alone)
+     *   R2: Title >= 65% AND Address >= 65%
+     *   R3: Title >= 65% AND GPS within 200m
+     *   R4: Address >= 90% AND Title >= 40%
+     *   R5: GPS within 50m AND Title >= 40%
+     */
+    private function phpNativeDuplicateCheck(array $data, array $existing): array
+    {
+        $newTitle   = mb_strtolower(trim($data['tieu_de'] ?? ''));
+        $newAddress = mb_strtolower(trim($data['dia_chi']  ?? ''));
+        $newLat     = ($data['vi_do']   !== '' && $data['vi_do']   !== null) ? (float)$data['vi_do']   : null;
+        $newLng     = ($data['kinh_do'] !== '' && $data['kinh_do'] !== null) ? (float)$data['kinh_do'] : null;
+
+        $bestScore  = 0.0;
+        $bestId     = null;
+        $bestReason = '';
+
+        foreach ($existing as $inc) {
+            $incTitle   = mb_strtolower(trim($inc['tieu_de'] ?? ''));
+            $incAddress = mb_strtolower(trim($inc['dia_chi']  ?? ''));
+            $incLat     = ($inc['vi_do']   !== null) ? (float)$inc['vi_do']   : null;
+            $incLng     = ($inc['kinh_do'] !== null) ? (float)$inc['kinh_do'] : null;
+
+            if (empty($incTitle) || empty($newTitle)) continue;
+
+            // ── Title similarity ──────────────────────────────────────
+            similar_text($newTitle, $incTitle, $titlePct);
+            $titleSim = $titlePct / 100.0;
+
+            // Levenshtein for short titles (handles typos)
+            $maxLen = max(mb_strlen($newTitle), mb_strlen($incTitle));
+            if ($maxLen > 0 && $maxLen <= 255) {
+                $lev      = levenshtein($newTitle, $incTitle);
+                $levSim   = 1.0 - ($lev / $maxLen);
+                $titleSim = max($titleSim, $levSim);
+            }
+
+            // ── Address similarity ────────────────────────────────────
+            $addrSim = 0.0;
+            if (!empty($newAddress) && !empty($incAddress)) {
+                similar_text($newAddress, $incAddress, $addrPct);
+                $addrSim = $addrPct / 100.0;
+                // Substring containment (e.g. shorter address is part of longer)
+                if (mb_strlen($newAddress) > 10 && mb_strpos($incAddress, $newAddress) !== false) {
+                    $addrSim = max($addrSim, 0.95);
+                }
+                if (mb_strlen($incAddress) > 10 && mb_strpos($newAddress, $incAddress) !== false) {
+                    $addrSim = max($addrSim, 0.95);
+                }
+            }
+
+            // ── GPS proximity ──────────────────────────────────────────
+            $distM    = null;
+            $gps200   = false;
+            $gps50    = false;
+            if ($newLat !== null && $newLng !== null && $incLat !== null && $incLng !== null) {
+                $distM  = $this->haversineMeters($newLat, $newLng, $incLat, $incLng);
+                $gps200 = $distM <= 200;
+                $gps50  = $distM <= 50;
+            }
+
+            // ── Apply rules ───────────────────────────────────────────
+            $isDup  = false;
+            $score  = 0.0;
+            $reason = '';
+            $pct    = round($titleSim * 100);
+
+            if ($titleSim >= 0.88) {                                             // R1
+                $isDup = true; $score = $titleSim;
+                $reason = "Tiêu đề gần như giống hệt ({$pct}%)";
+            } elseif ($titleSim >= 0.65 && $addrSim >= 0.65) {                  // R2
+                $isDup = true; $score = ($titleSim + $addrSim) / 2.0;
+                $reason = "Tiêu đề và địa chỉ đều tương tự";
+            } elseif ($titleSim >= 0.65 && $gps200) {                           // R3
+                $isDup = true; $score = ($titleSim + 0.9) / 2.0;
+                $reason = "Tiêu đề tương tự và cùng khu vực (" . round($distM) . "m)";
+            } elseif ($addrSim >= 0.90 && $titleSim >= 0.40) {                  // R4
+                $isDup = true; $score = ($titleSim + $addrSim) / 2.0;
+                $reason = "Cùng địa chỉ, nội dung liên quan";
+            } elseif ($gps50 && $titleSim >= 0.40) {                            // R5
+                $isDup = true; $score = ($titleSim + 0.95) / 2.0;
+                $reason = "Cùng vị trí GPS (" . round($distM) . "m), tiêu đề liên quan";
+            }
+
+            if ($isDup && $score > $bestScore) {
+                $bestScore = $score; $bestId = $inc['id_su_co']; $bestReason = $reason;
+            }
+        }
+
+        return ['is_duplicate' => $bestId !== null,
+                'id_su_co_trung' => $bestId,
+                'score'          => round($bestScore, 4),
+                'reason'         => $bestReason];
+    }
+
+    /**
+     * Haversine distance between two GPS points, returns meters.
+     */
+    private function haversineMeters(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        $R    = 6371000;
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+        $a    = sin($dLat / 2) ** 2
+              + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLon / 2) ** 2;
+        return $R * 2 * asin(sqrt($a));
+    }
+
 
     /**
      * Submit labeled incident to retrain text AI.

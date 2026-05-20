@@ -1,5 +1,5 @@
 <template>
-  <Modal v-model="show" title="📍 Báo cáo sự cố mới" size="lg">
+  <Modal v-model="show" :title="editIncident ? '📝 Chỉnh sửa sự cố' : '📍 Báo cáo sự cố mới'" size="lg">
     <form @submit.prevent="submit" class="space-y-4">
       <!-- Title -->
       <div>
@@ -155,7 +155,7 @@
         <button type="button" @click="show = false" class="btn-ghost flex-1">Hủy</button>
         <button type="submit" :disabled="loading || aiChecking" class="btn-emergency flex-1 flex items-center justify-center gap-2">
           <span v-if="loading" class="w-4 h-4 border-2 border-white/50 border-t-white rounded-full animate-spin" />
-          {{ loading ? 'Đang gửi...' : '🚨 Báo cáo ngay' }}
+          {{ loading ? 'Đang gửi...' : (editIncident ? '💾 Cập nhật' : '🚨 Báo cáo ngay') }}
         </button>
       </div>
     </form>
@@ -171,9 +171,10 @@ import api, { adminApi } from '@/services/api'
 const props = defineProps({
   modelValue: Boolean,
   prefillLat: { type: Number, default: null },
-  prefillLng: { type: Number, default: null }
+  prefillLng: { type: Number, default: null },
+  editIncident: { type: Object, default: null }
 })
-const emit = defineEmits(['update:modelValue', 'created'])
+const emit = defineEmits(['update:modelValue', 'created', 'updated'])
 
 const show = ref(props.modelValue)
 watch(() => props.modelValue, v => show.value = v)
@@ -420,34 +421,27 @@ async function analyzeImageWithAI(file) {
  * Returns false only if spam is confirmed (block submit).
  */
 async function checkDuplicateAndSpam() {
-  const aiUrl = 'http://localhost:8001'
   aiChecking.value = true
   aiWarning.value  = null
 
   try {
-    const resp = await fetch(`${aiUrl}/predict-json`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tieu_de:  form.tieu_de,
-        noi_dung: form.noi_dung,
-        vi_do:    form.vi_do   ? Number(form.vi_do)   : null,
-        kinh_do:  form.kinh_do ? Number(form.kinh_do) : null,
-      }),
-      signal: AbortSignal.timeout(6000),
+    const resp = await api.post('/ai/check-duplicate-pre', {
+      tieu_de:  form.tieu_de,
+      noi_dung: form.noi_dung,
+      dia_chi:  form.dia_chi,
+      vi_do:    form.vi_do   ? Number(form.vi_do)   : null,
+      kinh_do:  form.kinh_do ? Number(form.kinh_do) : null,
     })
 
-    if (!resp.ok) return true  // AI service down — allow submit
-
-    const data = await resp.json()
-    console.log('[AI Local Check]', data)
+    const data = resp.data
+    console.log('[AI Local Check via Backend]', data)
 
     // ── SPAM detection ────────────────────────────────────────────
     if (data.is_spam === 1) {
       aiWarning.value = {
         type: 'spam',
         title: '🚫 Cảnh báo SPAM',
-        message: 'Nội dung sự cố có dấu hiệu spam. Vui lòng cung cấp thông tin thực tế và chi tiết hơn.',
+        message: data.message || 'Nội dung sự cố có dấu hiệu spam. Vui lòng cung cấp thông tin thực tế và chi tiết hơn.',
       }
       toast.error('🚫 Sự cố bị từ chối vì bị phát hiện là spam!')
       return false  // block submit
@@ -458,18 +452,18 @@ async function checkDuplicateAndSpam() {
       const sim = data.similarity_score ? Math.round(data.similarity_score * 100) : '?'
       aiWarning.value = {
         type: 'duplicate',
-        title: '⚠️ Sự cố có thể trùng lặp',
-        message: `Phát hiện sự cố tương tự đã được báo cáo (độ tương đồng: ${sim}%). Bạn có thể tiếp tục gửi nếu đây là sự cố mới.`,
+        title: '🚫 Sự cố trùng lặp',
+        message: `Phát hiện sự cố này giống tới ${sim}% so với một sự cố đã có. Vui lòng không báo cáo lại!`,
       }
-      toast.warning(`⚠️ Sự cố này có thể trùng với sự cố đã có (${sim}% giống nhau). Kiểm tra lại trước khi gửi.`)
-      // Do NOT block — just warn; user can still submit
+      toast.error(`🚫 Từ chối: Sự cố trùng lặp (${sim}% giống nhau)!`)
+      return false  // block submit
     }
 
     return true
 
   } catch (err) {
-    console.warn('[AI Local] Service unavailable:', err.message)
-    return true  // AI down — allow submit
+    console.warn('[AI Local] Service unavailable or error:', err.message)
+    return true  // Backend/AI down — allow submit
   } finally {
     aiChecking.value = false
   }
@@ -509,13 +503,22 @@ async function submit() {
       fd.append('hinh_anhs[]', file)          // full array (new field)
     })
 
-    await api.post('/su-co', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
-    toast.success('✅ Sự cố đã được báo cáo thành công!')
+    // Check edit mode
+    if (props.editIncident) {
+      fd.append('_method', 'PATCH')
+      await api.post(`/su-co/${props.editIncident.id_su_co}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      toast.success('✅ Cập nhật sự cố thành công!')
+      emit('updated')
+    } else {
+      await api.post('/su-co', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      toast.success('✅ Sự cố đã được báo cáo thành công!')
+      emit('created')
+    }
+
     Object.assign(form, defaultForm())
     addressQuery.value = ''
     clearAllImages()
     show.value = false
-    emit('created')
   } catch (err) {
     const errs = err.response?.data?.errors
     const msg  = errs ? Object.values(errs).flat().join('\n') : (err.response?.data?.message || 'Có lỗi xảy ra!')
@@ -534,11 +537,29 @@ function clearAllImages() {
   if (fileInput.value) fileInput.value.value = ''
 }
 
-// ── Reset on open ─────────────────────────────────────────────────
 watch(show, val => {
   if (val) {
     loadDropdowns()
-    if (!form.vi_do) getGPS()
+    if (props.editIncident) {
+      Object.assign(form, {
+        tieu_de: props.editIncident.tieu_de,
+        noi_dung: props.editIncident.noi_dung,
+        dia_chi: props.editIncident.dia_chi,
+        vi_do: props.editIncident.vi_do,
+        kinh_do: props.editIncident.kinh_do,
+        id_loai_su_co: props.editIncident.id_loai_su_co,
+        id_muc_do: props.editIncident.id_muc_do
+      })
+      addressQuery.value = props.editIncident.dia_chi || ''
+      // Also, we can't easily populate imagePreviews from URLs to File objects.
+      // So we just let user upload new ones if they want to override.
+      clearAllImages()
+    } else {
+      Object.assign(form, defaultForm())
+      addressQuery.value = ''
+      clearAllImages()
+      if (!form.vi_do) getGPS()
+    }
   } else {
     closeSuggestions()
   }

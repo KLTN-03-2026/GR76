@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\ImageAnalysisController;
 // Public Auth routes
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/admin/login', [AuthController::class, 'loginAdmin']);
+Route::post('/login-unified', [AuthController::class, 'loginUnified']);
 Route::post('/register', [AuthController::class, 'register']);
 
 // Password Reset (OTP-based)
@@ -90,6 +91,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // AI API
     Route::post('/ai/phan-tich/{id}', [AiController::class, 'analyze']);
     Route::post('/ai/check-duplicate/{id}', [AiController::class, 'checkDuplicate']);
+    Route::post('/ai/check-duplicate-pre', [AiController::class, 'checkSpamAndDuplicatePre']);
 
     // Image Analysis (Groq Vision)
     Route::post('/analyze-image', [ImageAnalysisController::class, 'analyze']);

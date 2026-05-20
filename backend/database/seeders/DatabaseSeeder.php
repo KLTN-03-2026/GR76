@@ -23,12 +23,13 @@ class DatabaseSeeder extends Seeder
 
         // ── Admins ───────────────────────────────────────────────────
         $admins = [
-            ['ten_dang_nhap'=>'admin1','ho_ten'=>'Nguyễn Quản Trị','email'=>'admin1@sos.vn','so_dien_thoai'=>'0901111111'],
-            ['ten_dang_nhap'=>'admin2','ho_ten'=>'Trần Điều Hành','email'=>'admin2@sos.vn','so_dien_thoai'=>'0902222222'],
-            ['ten_dang_nhap'=>'superadmin','ho_ten'=>'Admin Trưởng','email'=>'super@sos.vn','so_dien_thoai'=>'0909999999'],
+            ['ten_dang_nhap'=>'admin1','ho_ten'=>'Nguyễn Quản Trị','email'=>'admin1@sos.vn','so_dien_thoai'=>'0901111111', 'mat_khau' => Hash::make('password')],
+            ['ten_dang_nhap'=>'admin2','ho_ten'=>'Trần Điều Hành','email'=>'admin2@sos.vn','so_dien_thoai'=>'0902222222', 'mat_khau' => Hash::make('password')],
+            ['ten_dang_nhap'=>'superadmin','ho_ten'=>'Admin Trưởng','email'=>'super@sos.vn','so_dien_thoai'=>'0909999999', 'mat_khau' => Hash::make('password')],
+            ['ten_dang_nhap'=>'minhquan@gmail.com','ho_ten'=>'Minh Quân (Email)','email'=>'minhquan@gmail.com','so_dien_thoai'=>'0909991810', 'mat_khau' => Hash::make('quan1810')],
         ];
         foreach ($admins as $a) {
-            Admin::create(array_merge($a, ['mat_khau' => Hash::make('password')]));
+            Admin::create($a);
         }
 
         // ── Admin minhquan1810 ────────────────────────────────────────
